@@ -241,6 +241,46 @@
     }
 }
 
+/* Dark mode select dropdown styling */
+.select select option {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+/* Ensure dropdown options are visible in dark theme */
+.select select {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border-color: #363636;
+}
+
+/* Style the dropdown arrow and focus states */
+.select select:focus {
+    border-color: #3273dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
+}
+
+/* Additional styling for better dark mode support */
+.modal .select select option {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.modal .select select {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+/* Hide scroll bar on modals */
+.modal {
+    overflow: hidden;
+}
+
+.modal-card-body {
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
 /* Mobile responsive adjustments for toasts */
 @media screen and (max-width: 768px) {
     .toastify {
