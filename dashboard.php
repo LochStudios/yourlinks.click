@@ -804,18 +804,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <i class="fas fa-tag"></i> Category
                         </label>
                         <div class="control has-icons-left">
-                            <div class="select is-fullwidth">
-                                <select id="category_id" name="category_id">
-                                    <option value="">No Category</option>
-                                    <?php foreach ($userCategories as $category): ?>
-                                        <option value="<?php echo $category['id']; ?>" 
-                                                data-color="<?php echo htmlspecialchars($category['color']); ?>"
-                                                data-icon="<?php echo htmlspecialchars($category['icon']); ?>">
+                            <!-- Custom Bulma dropdown to replace native select so options render visibly in modals -->
+                            <div class="dropdown is-fullwidth" id="create-category-dropdown">
+                                <div class="dropdown-trigger">
+                                    <button class="button is-fullwidth is-dark" aria-haspopup="true" aria-controls="create-category-menu" type="button">
+                                        <span class="dropdown-selected"><span class="dropdown-icon"><i class="fas fa-question-circle"></i></span>
+                                            <span class="dropdown-text">No Category</span>
+                                        </span>
+                                        <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu" id="create-category-menu" role="menu">
+                                    <div class="dropdown-content">
+                                        <a href="#" class="dropdown-item" data-value="">
+                                            <span class="icon"><i class="fas fa-question-circle"></i></span>
+                                            No Category
+                                        </a>
+                                        <?php foreach ($userCategories as $category): ?>
+                                        <a href="#" class="dropdown-item" data-value="<?php echo $category['id']; ?>" data-color="<?php echo htmlspecialchars($category['color']); ?>" data-icon="<?php echo htmlspecialchars($category['icon']); ?>">
+                                            <span class="icon" style="color: <?php echo htmlspecialchars($category['color']); ?>;"><i class="<?php echo htmlspecialchars($category['icon']); ?>"></i></span>
                                             <?php echo htmlspecialchars($category['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                        </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
                             </div>
+
+                            <input type="hidden" name="category_id" id="category_id" value="">
+
                             <span class="icon is-small is-left">
                                 <i class="fas fa-tag"></i>
                             </span>
@@ -1215,18 +1231,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <i class="fas fa-tag"></i> Category
                         </label>
                         <div class="control has-icons-left">
-                            <div class="select is-fullwidth">
-                                <select id="edit_category_id" name="edit_category_id">
-                                    <option value="">No Category</option>
-                                    <?php foreach ($userCategories as $category): ?>
-                                        <option value="<?php echo $category['id']; ?>" 
-                                                data-color="<?php echo htmlspecialchars($category['color']); ?>"
-                                                data-icon="<?php echo htmlspecialchars($category['icon']); ?>">
+                            <!-- Custom dropdown for edit modal -->
+                            <div class="dropdown is-fullwidth" id="edit-category-dropdown">
+                                <div class="dropdown-trigger">
+                                    <button class="button is-fullwidth is-dark" aria-haspopup="true" aria-controls="edit-category-menu" type="button">
+                                        <span class="dropdown-selected"><span class="dropdown-icon"><i class="fas fa-question-circle"></i></span>
+                                            <span class="dropdown-text">No Category</span>
+                                        </span>
+                                        <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu" id="edit-category-menu" role="menu">
+                                    <div class="dropdown-content">
+                                        <a href="#" class="dropdown-item" data-value="">
+                                            <span class="icon"><i class="fas fa-question-circle"></i></span>
+                                            No Category
+                                        </a>
+                                        <?php foreach ($userCategories as $category): ?>
+                                        <a href="#" class="dropdown-item" data-value="<?php echo $category['id']; ?>" data-color="<?php echo htmlspecialchars($category['color']); ?>" data-icon="<?php echo htmlspecialchars($category['icon']); ?>">
+                                            <span class="icon" style="color: <?php echo htmlspecialchars($category['color']); ?>;"><i class="<?php echo htmlspecialchars($category['icon']); ?>"></i></span>
                                             <?php echo htmlspecialchars($category['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                        </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
                             </div>
+
+                            <input type="hidden" name="edit_category_id" id="edit_category_id" value="">
+
                             <span class="icon is-small is-left">
                                 <i class="fas fa-tag"></i>
                             </span>
@@ -1789,6 +1821,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         }
+
+        // --- Custom category dropdown handling (replace native select) ---
+        function setupDropdown(dropdownId, hiddenInputId) {
+            const dd = document.getElementById(dropdownId);
+            if (!dd) return;
+            const trigger = dd.querySelector('.dropdown-trigger button');
+            const menu = dd.querySelector('.dropdown-menu');
+            const items = dd.querySelectorAll('.dropdown-item');
+            const selectedText = dd.querySelector('.dropdown-text');
+            const selectedIcon = dd.querySelector('.dropdown-icon i');
+            const hiddenInput = document.getElementById(hiddenInputId);
+
+            // Toggle open/close
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                dd.classList.toggle('is-active');
+            });
+
+            // Close if click outside
+            document.addEventListener('click', function(e) {
+                if (!dd.contains(e.target)) dd.classList.remove('is-active');
+            });
+
+            items.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const value = this.getAttribute('data-value');
+                    const icon = this.getAttribute('data-icon');
+                    const color = this.getAttribute('data-color');
+                    const text = this.textContent.trim();
+                    // update display
+                    if (selectedIcon && icon) {
+                        selectedIcon.className = icon;
+                        if (color) selectedIcon.style.color = color;
+                    }
+                    if (selectedText) selectedText.textContent = text;
+                    if (hiddenInput) hiddenInput.value = value;
+                    // close
+                    dd.classList.remove('is-active');
+                });
+            });
+        }
+
+        // Initialize both create and edit dropdowns
+        setupDropdown('create-category-dropdown', 'category_id');
+        setupDropdown('edit-category-dropdown', 'edit_category_id');
+
+        // When opening the edit modal, pre-select the current category id
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const categoryId = this.getAttribute('data-category-id') || '';
+                const editHidden = document.getElementById('edit_category_id');
+                const editDropdown = document.getElementById('edit-category-dropdown');
+                if (editHidden) editHidden.value = categoryId;
+                if (editDropdown) {
+                    // find matching item and update display
+                    const item = editDropdown.querySelector('.dropdown-item[data-value="' + categoryId + '"]');
+                    const textEl = editDropdown.querySelector('.dropdown-text');
+                    const iconEl = editDropdown.querySelector('.dropdown-icon i');
+                    if (item && textEl) {
+                        textEl.textContent = item.textContent.trim();
+                    }
+                    if (item && iconEl) {
+                        const icon = item.getAttribute('data-icon');
+                        const color = item.getAttribute('data-color');
+                        if (icon) iconEl.className = icon;
+                        if (color) iconEl.style.color = color;
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>

@@ -312,6 +312,11 @@ select option:hover,
     max-height: 70vh;
 }
 
+/* Ensure custom dropdown menus render above modal content */
+.dropdown .dropdown-menu {
+    z-index: 9999;
+}
+
 /* Mobile responsive adjustments for toasts */
 @media screen and (max-width: 768px) {
     .toastify {
