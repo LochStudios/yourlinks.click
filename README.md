@@ -157,6 +157,17 @@ yourlinks.click/
 └── README.md             # This file
 ```
 
+## Development
+
+The application uses:
+- **Backend**: PHP with PDO for database interactions
+- **Frontend**:
+  - [Bulma CSS 1.0.4](https://bulma.io/) - Modern CSS framework
+  - [Font Awesome 6.4.0](https://fontawesome.com/) - Icon library
+  - [SweetAlert2](https://sweetalert2.github.io/) - Beautiful alert dialogs
+- **Database**: MySQL for data storage
+- **Architecture**: MVC pattern with secure configuration management
+
 ## Security Notes
 
 - **Sensitive Configuration**: Database and OAuth credentials are stored in `/home/yourlink/webconfig/` outside the web root for security
