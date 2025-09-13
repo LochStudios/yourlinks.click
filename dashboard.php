@@ -68,6 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $expiresAt = !empty($_POST['expires_at']) ? $_POST['expires_at'] : null;
         $expirationBehavior = $_POST['expiration_behavior'] ?? 'inactive';
         $expiredRedirectUrl = trim($_POST['expired_redirect_url'] ?? '');
+        $expiredPageTitle = trim($_POST['expired_page_title'] ?? 'Link Expired');
+        $expiredPageMessage = trim($_POST['expired_page_message'] ?? 'This link has expired and is no longer available.');
         
         // Validate inputs
         if (empty($linkName) || empty($originalUrl)) {
@@ -90,8 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Create the link
                 $db->insert(
-                    "INSERT INTO links (user_id, link_name, original_url, title, category_id, expires_at, expired_redirect_url, expiration_behavior) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$_SESSION['user_id'], $linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expirationBehavior]
+                    "INSERT INTO links (user_id, link_name, original_url, title, category_id, expires_at, expired_redirect_url, expired_page_title, expired_page_message, expiration_behavior) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$_SESSION['user_id'], $linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expiredPageTitle, $expiredPageMessage, $expirationBehavior]
                 );
                 $success = "Link created successfully!";
             }
@@ -106,6 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $expiresAt = !empty($_POST['edit_expires_at']) ? $_POST['edit_expires_at'] : null;
         $expirationBehavior = $_POST['edit_expiration_behavior'] ?? 'inactive';
         $expiredRedirectUrl = trim($_POST['edit_expired_redirect_url'] ?? '');
+        $expiredPageTitle = trim($_POST['edit_expired_page_title'] ?? 'Link Expired');
+        $expiredPageMessage = trim($_POST['edit_expired_page_message'] ?? 'This link has expired and is no longer available.');
         
         // Validate inputs
         if (empty($linkName) || empty($originalUrl)) {
@@ -128,8 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Update the link
                 $db->execute(
-                    "UPDATE links SET link_name = ?, original_url = ?, title = ?, category_id = ?, expires_at = ?, expired_redirect_url = ?, expiration_behavior = ? WHERE id = ? AND user_id = ?",
-                    [$linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expirationBehavior, $linkId, $_SESSION['user_id']]
+                    "UPDATE links SET link_name = ?, original_url = ?, title = ?, category_id = ?, expires_at = ?, expired_redirect_url = ?, expired_page_title = ?, expired_page_message = ?, expiration_behavior = ? WHERE id = ? AND user_id = ?",
+                    [$linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expiredPageTitle, $expiredPageMessage, $expirationBehavior, $linkId, $_SESSION['user_id']]
                 );
                 $success = "Link updated successfully!";
                 
@@ -147,6 +151,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$_SESSION['user_id']]
                 );
             }
+        }
+    } elseif (isset($_POST['activate_link']) && isset($_POST['link_id'])) {
+        // Activate existing link
+        $linkId = (int)$_POST['link_id'];
+        
+        // Update the link to be active
+        $db->execute(
+            "UPDATE links SET is_active = TRUE WHERE id = ? AND user_id = ?",
+            [$linkId, $_SESSION['user_id']]
+        );
+        $success = "Link activated successfully!";
+        
+        // Refresh links data
+        $userLinks = $db->select(
+            "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
+             CASE 
+                 WHEN l.expires_at IS NOT NULL AND l.expires_at <= NOW() THEN 'expired'
+                 WHEN l.expires_at IS NOT NULL AND l.expires_at <= DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'expiring_soon'
+                 ELSE 'active'
+             END as expiration_status
+             FROM links l
+             LEFT JOIN categories c ON l.category_id = c.id
+             WHERE l.user_id = ? ORDER BY l.created_at DESC",
+            [$_SESSION['user_id']]
+        );
+    } elseif (isset($_POST['deactivate_link']) && isset($_POST['deactivate_link_id'])) {
+        // Deactivate existing link with custom behavior
+        $linkId = (int)$_POST['deactivate_link_id'];
+        $deactivateBehavior = $_POST['deactivate_behavior'] ?? 'inactive';
+        $deactivateRedirectUrl = trim($_POST['deactivate_redirect_url'] ?? '');
+        
+        $deactivateRedirectUrl = trim($_POST['deactivate_redirect_url'] ?? '');
+        $deactivatedPageTitle = trim($_POST['deactivated_page_title'] ?? 'Link Deactivated');
+        $deactivatedPageMessage = trim($_POST['deactivated_page_message'] ?? 'This link has been deactivated and is no longer available.');
+        
+        // Validate inputs
+        if ($deactivateBehavior === 'redirect' && empty($deactivateRedirectUrl)) {
+            $error = "Redirect URL is required when deactivation behavior is set to redirect.";
+        } elseif ($deactivateBehavior === 'redirect' && !filter_var($deactivateRedirectUrl, FILTER_VALIDATE_URL)) {
+            $error = "Please enter a valid redirect URL.";
+        } else {
+            // Update the link to be inactive with deactivation behavior
+            $db->execute(
+                "UPDATE links SET is_active = FALSE, deactivation_behavior = ?, deactivated_redirect_url = ?, deactivated_page_title = ?, deactivated_page_message = ? WHERE id = ? AND user_id = ?",
+                [$deactivateBehavior, $deactivateRedirectUrl, $deactivatedPageTitle, $deactivatedPageMessage, $linkId, $_SESSION['user_id']]
+            );
+            $success = "Link deactivated successfully!";
+            
+            // Refresh links data
+            $userLinks = $db->select(
+                "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
+                 CASE 
+                     WHEN l.expires_at IS NOT NULL AND l.expires_at <= NOW() THEN 'expired'
+                     WHEN l.expires_at IS NOT NULL AND l.expires_at <= DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'expiring_soon'
+                     ELSE 'active'
+                 END as expiration_status
+                 FROM links l
+                 LEFT JOIN categories c ON l.category_id = c.id
+                 WHERE l.user_id = ? ORDER BY l.created_at DESC",
+                [$_SESSION['user_id']]
+            );
         }
     } elseif (isset($_POST['update_custom_domain'])) {
         // Only allow custom domain updates for testing user
@@ -783,6 +848,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <p class="help">URL to redirect visitors when this link expires</p>
                     </div>
+                    <div class="field" id="expired_custom_page_field" style="display: none;">
+                        <label class="label" for="expired_page_title">
+                            <i class="fas fa-heading"></i> Custom Page Title
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="expired_page_title" name="expired_page_title"
+                                   placeholder="Link Expired" value="Link Expired">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-i-cursor"></i>
+                            </span>
+                        </div>
+                        <p class="help">Title shown on the custom expired page</p>
+                    </div>
+                    <div class="field" id="expired_custom_message_field" style="display: none;">
+                        <label class="label" for="expired_page_message">
+                            <i class="fas fa-comment"></i> Custom Message
+                        </label>
+                        <div class="control">
+                            <textarea class="textarea" id="expired_page_message" name="expired_page_message"
+                                      placeholder="This link has expired..." rows="3">This link has expired and is no longer available.</textarea>
+                        </div>
+                        <p class="help">Message shown on the custom expired page</p>
+                    </div>
                     <div class="field">
                         <div class="control">
                             <button type="submit" name="create_link" class="button is-primary is-medium">
@@ -899,7 +987,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         echo '<td><span class="tag ' . ($link['is_active'] ? 'is-success' : 'is-danger') . '">' . $status . '</span></td>';
                         echo '<td>';
                         echo '<div class="buttons are-small">';
-                        echo '<button type="button" class="button is-info edit-btn" data-link-id="' . $link['id'] . '" data-link-name="' . htmlspecialchars($link['link_name']) . '" data-original-url="' . htmlspecialchars($link['original_url']) . '" data-title="' . htmlspecialchars($link['title'] ?? '') . '" data-category-id="' . ($link['category_id'] ?? '') . '" data-expires-at="' . htmlspecialchars($link['expires_at'] ?? '') . '" data-expiration-behavior="' . htmlspecialchars($link['expiration_behavior'] ?? 'inactive') . '" data-expired-redirect-url="' . htmlspecialchars($link['expired_redirect_url'] ?? '') . '">';
+                        echo '<button type="button" class="button is-info edit-btn" data-link-id="' . $link['id'] . '" data-link-name="' . htmlspecialchars($link['link_name']) . '" data-original-url="' . htmlspecialchars($link['original_url']) . '" data-title="' . htmlspecialchars($link['title'] ?? '') . '" data-category-id="' . ($link['category_id'] ?? '') . '" data-expires-at="' . htmlspecialchars($link['expires_at'] ?? '') . '" data-expiration-behavior="' . htmlspecialchars($link['expiration_behavior'] ?? 'inactive') . '" data-expired-redirect-url="' . htmlspecialchars($link['expired_redirect_url'] ?? '') . '" data-expired-page-title="' . htmlspecialchars($link['expired_page_title'] ?? 'Link Expired') . '" data-expired-page-message="' . htmlspecialchars($link['expired_page_message'] ?? 'This link has expired and is no longer available.') . '">';
                         echo '<span class="icon"><i class="fas fa-edit"></i></span>';
                         echo '<span>Edit</span>';
                         echo '</button>';
@@ -944,8 +1032,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </section>
 
-    <!-- Edit Link Modal -->
-    <div class="modal" id="edit-link-modal">
+    <!-- Deactivate Link Modal -->
+    <div class="modal" id="deactivate-link-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head has-background-dark">
+                <p class="modal-card-title has-text-light">
+                    <i class="fas fa-pause has-text-warning"></i> Deactivate Link
+                </p>
+                <button class="delete" aria-label="close" id="deactivate-modal-close"></button>
+            </header>
+            <section class="modal-card-body has-background-dark-ter">
+                <div class="notification is-warning is-dark">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>What should happen when visitors try to access this deactivated link?</strong>
+                </div>
+
+                <form method="POST" action="" id="deactivate-link-form">
+                    <input type="hidden" name="deactivate_link_id" id="deactivate_link_id">
+
+                    <div class="field">
+                        <label class="label has-text-light" for="deactivate_behavior">
+                            <i class="fas fa-exclamation-triangle"></i> When Link is Deactivated
+                        </label>
+                        <div class="control has-icons-left">
+                            <div class="select is-fullwidth">
+                                <select id="deactivate_behavior" name="deactivate_behavior" required>
+                                    <option value="inactive">Show 404 error page</option>
+                                    <option value="redirect">Redirect to custom URL</option>
+                                    <option value="custom_page">Show custom deactivated page</option>
+                                </select>
+                            </div>
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-toggle-off"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">Choose what happens when visitors access this deactivated link</p>
+                    </div>
+
+                    <div class="field" id="deactivate_redirect_field" style="display: none;">
+                        <label class="label has-text-light" for="deactivate_redirect_url">
+                            <i class="fas fa-external-link-alt"></i> Deactivated Redirect URL
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="url" id="deactivate_redirect_url" name="deactivate_redirect_url"
+                                   placeholder="https://example.com/deactivated">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-globe"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">URL to redirect visitors when this link is deactivated</p>
+                    </div>
+                    <div class="field" id="deactivate_custom_page_field" style="display: none;">
+                        <label class="label has-text-light" for="deactivated_page_title">
+                            <i class="fas fa-heading"></i> Custom Page Title
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="deactivated_page_title" name="deactivated_page_title"
+                                   placeholder="Link Deactivated" value="Link Deactivated">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-i-cursor"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">Title shown on the custom deactivated page</p>
+                    </div>
+                    <div class="field" id="deactivate_custom_message_field" style="display: none;">
+                        <label class="label has-text-light" for="deactivated_page_message">
+                            <i class="fas fa-comment"></i> Custom Message
+                        </label>
+                        <div class="control">
+                            <textarea class="textarea" id="deactivated_page_message" name="deactivated_page_message"
+                                      placeholder="This link has been deactivated..." rows="3">This link has been deactivated and is no longer available.</textarea>
+                        </div>
+                        <p class="help has-text-grey-light">Message shown on the custom deactivated page</p>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot has-background-dark">
+                <button class="button is-warning" type="submit" form="deactivate-link-form" name="deactivate_link">
+                    <span class="icon">
+                        <i class="fas fa-pause"></i>
+                    </span>
+                    <span>Deactivate Link</span>
+                </button>
+                <button class="button is-dark" id="deactivate-modal-cancel">
+                    <span class="icon">
+                        <i class="fas fa-times"></i>
+                    </span>
+                    <span>Cancel</span>
+                </button>
+            </footer>
+        </div>
+    </div>
         <div class="modal-background"></div>
         <div class="modal-card">
             <header class="modal-card-head has-background-dark">
@@ -1080,6 +1258,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <p class="help has-text-grey-light">URL to redirect visitors when this link expires</p>
                     </div>
+                    <div class="field" id="edit_expired_custom_page_field" style="display: none;">
+                        <label class="label has-text-light" for="edit_expired_page_title">
+                            <i class="fas fa-heading"></i> Custom Page Title
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="edit_expired_page_title" name="edit_expired_page_title"
+                                   placeholder="Link Expired">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-i-cursor"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">Title shown on the custom expired page</p>
+                    </div>
+                    <div class="field" id="edit_expired_custom_message_field" style="display: none;">
+                        <label class="label has-text-light" for="edit_expired_page_message">
+                            <i class="fas fa-comment"></i> Custom Message
+                        </label>
+                        <div class="control">
+                            <textarea class="textarea" id="edit_expired_page_message" name="edit_expired_page_message"
+                                      placeholder="This link has expired..." rows="3"></textarea>
+                        </div>
+                        <p class="help has-text-grey-light">Message shown on the custom expired page</p>
+                    </div>
                 </form>
             </section>
             <footer class="modal-card-foot has-background-dark">
@@ -1180,12 +1381,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Expiration behavior dropdown handler
         document.getElementById('expiration_behavior').addEventListener('change', function() {
             const expiredRedirectField = document.getElementById('expired_redirect_field');
+            const expiredCustomPageField = document.getElementById('expired_custom_page_field');
+            const expiredCustomMessageField = document.getElementById('expired_custom_message_field');
             const expiredRedirectInput = document.getElementById('expired_redirect_url');
+            
             if (this.value === 'redirect') {
                 expiredRedirectField.style.display = 'block';
+                expiredCustomPageField.style.display = 'none';
+                expiredCustomMessageField.style.display = 'none';
                 expiredRedirectInput.required = true;
+            } else if (this.value === 'custom_page') {
+                expiredRedirectField.style.display = 'none';
+                expiredCustomPageField.style.display = 'block';
+                expiredCustomMessageField.style.display = 'block';
+                expiredRedirectInput.required = false;
+                expiredRedirectInput.value = '';
             } else {
                 expiredRedirectField.style.display = 'none';
+                expiredCustomPageField.style.display = 'none';
+                expiredCustomMessageField.style.display = 'none';
                 expiredRedirectInput.required = false;
                 expiredRedirectInput.value = '';
             }
@@ -1210,15 +1424,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 document.getElementById('edit_expires_at').value = expiresAt ? new Date(expiresAt).toISOString().slice(0, 16) : '';
                 document.getElementById('edit_expiration_behavior').value = expirationBehavior;
                 document.getElementById('edit_expired_redirect_url').value = expiredRedirectUrl;
+                
+                // Populate custom page fields
+                const editExpiredPageTitle = this.getAttribute('data-expired-page-title') || 'Link Expired';
+                const editExpiredPageMessage = this.getAttribute('data-expired-page-message') || 'This link has expired and is no longer available.';
+                document.getElementById('edit_expired_page_title').value = editExpiredPageTitle;
+                document.getElementById('edit_expired_page_message').value = editExpiredPageMessage;
+                
                 // Handle expiration behavior visibility
                 const editExpiredRedirectField = document.getElementById('edit_expired_redirect_field');
+                const editExpiredCustomPageField = document.getElementById('edit_expired_custom_page_field');
+                const editExpiredCustomMessageField = document.getElementById('edit_expired_custom_message_field');
                 const editExpiredRedirectInput = document.getElementById('edit_expired_redirect_url');
+                
                 if (expirationBehavior === 'redirect') {
                     editExpiredRedirectField.style.display = 'block';
+                    editExpiredCustomPageField.style.display = 'none';
+                    editExpiredCustomMessageField.style.display = 'none';
                     editExpiredRedirectInput.required = true;
+                } else if (expirationBehavior === 'custom_page') {
+                    editExpiredRedirectField.style.display = 'none';
+                    editExpiredCustomPageField.style.display = 'block';
+                    editExpiredCustomMessageField.style.display = 'block';
+                    editExpiredRedirectInput.required = false;
+                    editExpiredRedirectInput.value = '';
                 } else {
                     editExpiredRedirectField.style.display = 'none';
+                    editExpiredCustomPageField.style.display = 'none';
+                    editExpiredCustomMessageField.style.display = 'none';
                     editExpiredRedirectInput.required = false;
+                    editExpiredRedirectInput.value = '';
                 }
                 // Update preview
                 updateEditPreview(linkName);
@@ -1257,12 +1492,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Edit expiration behavior dropdown handler
         document.getElementById('edit_expiration_behavior').addEventListener('change', function() {
             const editExpiredRedirectField = document.getElementById('edit_expired_redirect_field');
+            const editExpiredCustomPageField = document.getElementById('edit_expired_custom_page_field');
+            const editExpiredCustomMessageField = document.getElementById('edit_expired_custom_message_field');
             const editExpiredRedirectInput = document.getElementById('edit_expired_redirect_url');
+            
             if (this.value === 'redirect') {
                 editExpiredRedirectField.style.display = 'block';
+                editExpiredCustomPageField.style.display = 'none';
+                editExpiredCustomMessageField.style.display = 'none';
                 editExpiredRedirectInput.required = true;
+            } else if (this.value === 'custom_page') {
+                editExpiredRedirectField.style.display = 'none';
+                editExpiredCustomPageField.style.display = 'block';
+                editExpiredCustomMessageField.style.display = 'block';
+                editExpiredRedirectInput.required = false;
+                editExpiredRedirectInput.value = '';
             } else {
                 editExpiredRedirectField.style.display = 'none';
+                editExpiredCustomPageField.style.display = 'none';
+                editExpiredCustomMessageField.style.display = 'none';
                 editExpiredRedirectInput.required = false;
                 editExpiredRedirectInput.value = '';
             }
@@ -1351,27 +1599,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
+        // Deactivate link functionality
         document.querySelectorAll('.deactivate-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const linkId = this.getAttribute('data-link-id');
-                Swal.fire({
-                    title: 'Deactivate Link?',
-                    text: 'This link will no longer redirect visitors.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#f39c12',
-                    cancelButtonColor: '#f14668',
-                    confirmButtonText: 'Yes, deactivate it!',
-                    background: '#1a1a1a',
-                    color: '#ffffff'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Show loading toast
-                        showInfoToast("Deactivating link...");
-                        document.getElementById('deactivate-form-' + linkId).submit();
-                    }
-                });
+
+                // Populate the deactivate modal
+                document.getElementById('deactivate_link_id').value = linkId;
+
+                // Reset form to default values
+                document.getElementById('deactivate_behavior').value = 'inactive';
+                document.getElementById('deactivate_redirect_url').value = '';
+                document.getElementById('deactivate_redirect_field').style.display = 'none';
+                document.getElementById('deactivate_custom_page_field').style.display = 'none';
+                document.getElementById('deactivate_custom_message_field').style.display = 'none';
+
+                // Show modal
+                document.getElementById('deactivate-link-modal').classList.add('is-active');
             });
+        });
+
+        // Deactivate modal close handlers
+        document.getElementById('deactivate-modal-close').addEventListener('click', function() {
+            document.getElementById('deactivate-link-modal').classList.remove('is-active');
+        });
+
+        document.getElementById('deactivate-modal-cancel').addEventListener('click', function() {
+            document.getElementById('deactivate-link-modal').classList.remove('is-active');
+        });
+
+        document.getElementById('deactivate-link-modal').querySelector('.modal-background').addEventListener('click', function() {
+            document.getElementById('deactivate-link-modal').classList.remove('is-active');
+        });
+
+        // Deactivate behavior dropdown handler
+        document.getElementById('deactivate_behavior').addEventListener('change', function() {
+            const deactivateRedirectField = document.getElementById('deactivate_redirect_field');
+            const deactivateCustomPageField = document.getElementById('deactivate_custom_page_field');
+            const deactivateCustomMessageField = document.getElementById('deactivate_custom_message_field');
+            const deactivateRedirectInput = document.getElementById('deactivate_redirect_url');
+            
+            if (this.value === 'redirect') {
+                deactivateRedirectField.style.display = 'block';
+                deactivateCustomPageField.style.display = 'none';
+                deactivateCustomMessageField.style.display = 'none';
+                deactivateRedirectInput.required = true;
+            } else if (this.value === 'custom_page') {
+                deactivateRedirectField.style.display = 'none';
+                deactivateCustomPageField.style.display = 'block';
+                deactivateCustomMessageField.style.display = 'block';
+                deactivateRedirectInput.required = false;
+                deactivateRedirectInput.value = '';
+            } else {
+                deactivateRedirectField.style.display = 'none';
+                deactivateCustomPageField.style.display = 'none';
+                deactivateCustomMessageField.style.display = 'none';
+                deactivateRedirectInput.required = false;
+                deactivateRedirectInput.value = '';
+            }
         });
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', function() {
