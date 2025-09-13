@@ -1,8 +1,8 @@
-/* YourLinks.click - Custom Styles (complementing Bulma) */
+/* YourLinks.click - Custom Styles (Dark Mode Optimized) */
 
 /* Custom hero background for home page */
 .hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2a2a72 0%, #1a1a2e 100%);
 }
 
 /* Custom notification close button animation */
@@ -14,15 +14,24 @@
     transform: scale(1.1);
 }
 
-/* Custom form styling */
+/* Custom form styling for dark mode */
 .field .control.has-icons-left .icon {
-    color: #dbdbdb;
+    color: #7a7a7a;
 }
 
-/* Custom table styling */
+/* Custom table styling for dark mode */
 .table th {
     font-weight: 600;
-    color: #363636;
+    color: #ffffff;
+    background-color: #2a2a2a;
+}
+
+.table td {
+    color: #e0e0e0;
+}
+
+.table tr:hover {
+    background-color: #3a3a3a !important;
 }
 
 /* Custom button hover effects */
@@ -32,7 +41,7 @@
 
 .button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Custom card hover effects */
@@ -41,7 +50,7 @@
 }
 
 .card:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 /* Custom link styling */
@@ -77,7 +86,7 @@
 
 .is-loading::after {
     animation: spinAround 500ms infinite linear;
-    border: 2px solid #dbdbdb;
+    border: 2px solid #4a4a4a;
     border-radius: 9999px;
     border-right-color: transparent;
     border-top-color: transparent;
@@ -110,6 +119,39 @@
     box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
 }
 
+/* Custom box styling for dark mode */
+.box {
+    background-color: #2a2a2a;
+    border: 1px solid #4a4a4a;
+    color: #e0e0e0;
+}
+
+/* Custom input styling for dark mode */
+.input {
+    background-color: #1a1a1a;
+    border-color: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.input::placeholder {
+    color: #7a7a7a;
+}
+
+.input:focus {
+    border-color: #3273dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
+}
+
+/* Custom label styling */
+.label {
+    color: #e0e0e0;
+}
+
+/* Custom help text */
+.help {
+    color: #7a7a7a;
+}
+
 /* Custom print styles */
 @media print {
     .navbar,
@@ -123,8 +165,10 @@
         color: black !important;
     }
 
-    .card {
+    .card, .box {
         box-shadow: none !important;
         border: 1px solid #ddd !important;
+        background: white !important;
+        color: black !important;
     }
 }

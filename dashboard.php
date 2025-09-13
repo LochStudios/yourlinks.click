@@ -20,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $linkName = trim($_POST['link_name']);
         $originalUrl = trim($_POST['original_url']);
         $title = trim($_POST['title'] ?? '');
-
         // Validate inputs
         if (empty($linkName) || empty($originalUrl)) {
             $error = "Link name and destination URL are required.";
@@ -56,31 +55,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="has-background-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - YourLinks.click</title>
-
-    <!-- Bulma CSS -->
+    <!-- Bulma CSS with Dark Mode -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma-dark-mode@1.0.4/dist/css/bulma-dark-mode.min.css">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/site.css">
 </head>
-<body>
+<body class="has-background-dark has-text-light">
     <!-- Navigation -->
-    <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
-            <a class="navbar-item" href="/">
+            <a class="navbar-item has-text-primary" href="/">
                 <i class="fas fa-link"></i>
                 <strong>YourLinks.click</strong>
             </a>
         </div>
-
         <div class="navbar-menu">
             <div class="navbar-end">
                 <div class="navbar-item">
@@ -96,12 +92,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </nav>
-
     <!-- Main Content -->
     <section class="section">
         <div class="container">
             <!-- User Info Header -->
-            <div class="card">
+            <div class="card has-background-dark-ter has-text-light">
                 <div class="card-content">
                     <div class="media">
                         <div class="media-left">
@@ -110,36 +105,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </figure>
                         </div>
                         <div class="media-content">
-                            <p class="title is-4">
-                                <i class="fas fa-user"></i> Welcome back, <?php echo htmlspecialchars($user['display_name']); ?>!
+                            <p class="title is-4 has-text-primary">
+                                <i class="fas fa-user has-text-primary"></i> Welcome back, <?php echo htmlspecialchars($user['display_name']); ?>!
                             </p>
-                            <p class="subtitle is-6">
-                                <i class="fab fa-twitch"></i> @<?php echo htmlspecialchars($user['login']); ?>
+                            <p class="subtitle is-6 has-text-grey-light">
+                                <i class="fab fa-twitch has-text-primary"></i> @<?php echo htmlspecialchars($user['login']); ?>
                             </p>
-                            <p class="content">Manage your links and view analytics from your dashboard.</p>
+                            <p class="content has-text-grey">Manage your links and view analytics from your dashboard.</p>
                         </div>
                     </div>
                 </div>
             </div>
-
             <!-- Success/Error Messages -->
             <?php if (isset($success)): ?>
-                <div class="notification is-success is-light">
+                <div class="notification is-success is-dark">
                     <button class="delete"></button>
                     <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
                 </div>
             <?php endif; ?>
             <?php if (isset($error)): ?>
-                <div class="notification is-danger is-light">
+                <div class="notification is-danger is-dark">
                     <button class="delete"></button>
                     <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
-
             <!-- Stats Cards -->
             <div class="columns is-multiline mt-5">
                 <div class="column is-4">
-                    <div class="card has-background-primary has-text-white">
+                    <div class="card has-background-primary-dark has-text-white">
                         <div class="card-content has-text-centered">
                             <div class="content">
                                 <p class="title is-2">
@@ -156,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <div class="column is-4">
-                    <div class="card has-background-info has-text-white">
+                    <div class="card has-background-info-dark has-text-white">
                         <div class="card-content has-text-centered">
                             <div class="content">
                                 <p class="title is-2">
@@ -173,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <div class="column is-4">
-                    <div class="card has-background-success has-text-white">
+                    <div class="card has-background-success-dark has-text-white">
                         <div class="card-content has-text-centered">
                             <div class="content">
                                 <p class="title is-2">
@@ -190,13 +183,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
             </div>
-
             <!-- Link Management Section -->
-            <div class="box">
-                <h2 class="title is-4">
-                    <i class="fas fa-plus-circle"></i> Create New Link
+            <div class="box has-background-dark-ter has-text-light">
+                <h2 class="title is-4 has-text-primary">
+                    <i class="fas fa-plus-circle has-text-primary"></i> Create New Link
                 </h2>
-
                 <form method="POST" action="">
                     <div class="field">
                         <label class="label" for="link_name">
@@ -213,7 +204,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             Your link will be: <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></strong>
                         </p>
                     </div>
-
                     <div class="field">
                         <label class="label" for="original_url">
                             <i class="fas fa-external-link-alt"></i> Destination URL
@@ -227,7 +217,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <p class="help">The URL where visitors will be redirected</p>
                     </div>
-
                     <div class="field">
                         <label class="label" for="title">
                             <i class="fas fa-heading"></i> Title (Optional)
@@ -241,7 +230,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <p class="help">A friendly name to help you remember this link</p>
                     </div>
-
                     <div class="field">
                         <div class="control">
                             <button type="submit" name="create_link" class="button is-primary is-medium">
@@ -254,21 +242,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </form>
             </div>
-
             <!-- Links Table -->
-            <div class="box">
-                <h2 class="title is-4">
-                    <i class="fas fa-list"></i> Your Links
+            <div class="box has-background-dark-ter has-text-light">
+                <h2 class="title is-4 has-text-primary">
+                    <i class="fas fa-list has-text-primary"></i> Your Links
                 </h2>
-
                 <?php
                 $userLinks = $db->select(
                     "SELECT * FROM links WHERE user_id = ? ORDER BY created_at DESC",
                     [$_SESSION['user_id']]
                 );
-
                 if (empty($userLinks)) {
-                    echo '<div class="notification is-info is-light">';
+                    echo '<div class="notification is-info is-dark">';
                     echo '<i class="fas fa-info-circle"></i> You haven\'t created any links yet. Create your first link above!';
                     echo '</div>';
                 } else {
@@ -285,12 +270,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo '</tr>';
                     echo '</thead>';
                     echo '<tbody>';
-
                     foreach ($userLinks as $link) {
                         $fullUrl = 'https://' . $user['login'] . '.yourlinks.click/' . $link['link_name'];
                         $status = $link['is_active'] ? 'Active' : 'Inactive';
                         $statusClass = $link['is_active'] ? 'has-text-success' : 'has-text-danger';
-
                         echo '<tr>';
                         echo '<td>';
                         echo '<a href="' . htmlspecialchars($fullUrl) . '" target="_blank" class="has-text-link">';
@@ -323,27 +306,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         echo '<span>Delete</span>';
                         echo '</button>';
                         echo '</div>';
-
                         // Hidden forms for POST actions
                         echo '<form method="POST" action="" class="is-hidden" id="activate-form-' . $link['id'] . '">';
                         echo '<input type="hidden" name="link_id" value="' . $link['id'] . '">';
                         echo '<input type="hidden" name="activate_link" value="1">';
                         echo '</form>';
-
                         echo '<form method="POST" action="" class="is-hidden" id="deactivate-form-' . $link['id'] . '">';
                         echo '<input type="hidden" name="link_id" value="' . $link['id'] . '">';
                         echo '<input type="hidden" name="deactivate_link" value="1">';
                         echo '</form>';
-
                         echo '<form method="POST" action="" class="is-hidden" id="delete-form-' . $link['id'] . '">';
                         echo '<input type="hidden" name="link_id" value="' . $link['id'] . '">';
                         echo '<input type="hidden" name="delete_link" value="1">';
                         echo '</form>';
-
                         echo '</td>';
                         echo '</tr>';
                     }
-
                     echo '</tbody>';
                     echo '</table>';
                     echo '</div>';
@@ -352,10 +330,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </section>
-
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
         // Live preview of link URL
         document.getElementById('link_name').addEventListener('input', function() {
@@ -367,7 +343,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 previewElement.textContent = 'linkname';
             }
         });
-
         // SweetAlert2 for actions
         document.querySelectorAll('.activate-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -379,7 +354,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     showCancelButton: true,
                     confirmButtonColor: '#48c774',
                     cancelButtonColor: '#f14668',
-                    confirmButtonText: 'Yes, activate it!'
+                    confirmButtonText: 'Yes, activate it!',
+                    background: '#1a1a1a',
+                    color: '#ffffff'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         document.getElementById('activate-form-' + linkId).submit();
@@ -387,7 +364,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
-
         document.querySelectorAll('.deactivate-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const linkId = this.getAttribute('data-link-id');
@@ -398,7 +374,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     showCancelButton: true,
                     confirmButtonColor: '#f39c12',
                     cancelButtonColor: '#f14668',
-                    confirmButtonText: 'Yes, deactivate it!'
+                    confirmButtonText: 'Yes, deactivate it!',
+                    background: '#1a1a1a',
+                    color: '#ffffff'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         document.getElementById('deactivate-form-' + linkId).submit();
@@ -406,7 +384,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
-
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const linkId = this.getAttribute('data-link-id');
@@ -417,7 +394,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     showCancelButton: true,
                     confirmButtonColor: '#f14668',
                     cancelButtonColor: '#363636',
-                    confirmButtonText: 'Yes, delete it!'
+                    confirmButtonText: 'Yes, delete it!',
+                    background: '#1a1a1a',
+                    color: '#ffffff'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         document.getElementById('delete-form-' + linkId).submit();
@@ -425,7 +404,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
-
         // Close notifications
         document.querySelectorAll('.notification .delete').forEach(deleteBtn => {
             deleteBtn.addEventListener('click', function() {

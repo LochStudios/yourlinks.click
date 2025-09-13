@@ -10,6 +10,7 @@ A PHP-based link shortening and management service with Twitch OAuth authenticat
 - **Analytics**: Track clicks and performance metrics
 - **User Dashboard**: Manage your links in a clean interface
 - **MySQL Database**: Robust data storage with proper relationships
+- **Dark Mode**: Modern dark theme enabled by default for better user experience
 
 ## How It Works
 
@@ -137,6 +138,23 @@ chmod 755 /path/to/yourlinks.click
 
 Open your browser and navigate to `http://yourlinks.click`
 
+### 8. Dark Mode Testing
+
+The application uses dark mode by default. To test the dark mode implementation:
+
+1. **Open the test page**: Navigate to `http://yourlinks.click/darkmode-test.html`
+2. **Test components**: Verify that all UI elements display correctly with dark backgrounds
+3. **Check contrast**: Ensure text is readable against dark backgrounds
+4. **Test interactions**: Verify buttons, forms, and alerts work properly in dark mode
+
+The dark mode implementation includes:
+- Dark hero backgrounds with gradients
+- Dark card and box backgrounds
+- Light text on dark backgrounds
+- Dark-themed form inputs and controls
+- Dark table headers with light content
+- Dark-themed SweetAlert2 popups
+
 ## Project Structure
 
 ```
@@ -162,11 +180,12 @@ yourlinks.click/
 The application uses:
 - **Backend**: PHP with PDO for database interactions
 - **Frontend**:
-  - [Bulma CSS 1.0.4](https://bulma.io/) - Modern CSS framework
+  - [Bulma CSS 1.0.4](https://bulma.io/) - Modern CSS framework with dark mode support
   - [Font Awesome 6.4.0](https://fontawesome.com/) - Icon library
-  - [SweetAlert2](https://sweetalert2.github.io/) - Beautiful alert dialogs
+  - [SweetAlert2](https://sweetalert2.github.io/) - Beautiful alert dialogs with dark theme
 - **Database**: MySQL for data storage
 - **Architecture**: MVC pattern with secure configuration management
+- **Theme**: Dark mode enabled by default for modern user experience
 
 ## Security Notes
 
