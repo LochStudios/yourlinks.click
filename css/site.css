@@ -317,11 +317,83 @@ select option:hover,
     z-index: 9999;
 }
 
-/* Mobile responsive adjustments for toasts */
+/* Tidy, accessible styling for the custom category dropdowns used in modals */
+#create-category-dropdown,
+#edit-category-dropdown {
+    width: 100%;
+}
+
+#create-category-dropdown .dropdown-trigger .button,
+#edit-category-dropdown .dropdown-trigger .button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background-color: #121212;
+    border: 1px solid #363636;
+    color: #e8eef6;
+    border-radius: 6px;
+}
+
+#create-category-dropdown .dropdown-selected,
+#edit-category-dropdown .dropdown-selected {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+#create-category-dropdown .dropdown-icon i,
+#edit-category-dropdown .dropdown-icon i {
+    font-size: 0.9rem;
+    opacity: 0.95;
+}
+
+#create-category-dropdown .dropdown-menu,
+#edit-category-dropdown .dropdown-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    background-color: #0f0f0f;
+    border: 1px solid #272727;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    padding: 0.25rem;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+#create-category-dropdown .dropdown-content .dropdown-item,
+#edit-category-dropdown .dropdown-content .dropdown-item {
+    color: #e8eef6;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+#create-category-dropdown .dropdown-content .dropdown-item .icon,
+#edit-category-dropdown .dropdown-content .dropdown-item .icon {
+    margin-right: 0.4rem;
+}
+
+#create-category-dropdown .dropdown-content .dropdown-item:hover,
+#edit-category-dropdown .dropdown-content .dropdown-item:hover {
+    background-color: #1f6feb;
+    color: #fff;
+}
+
+/* Make sure icons inside items stay small and visible */
+#create-category-dropdown .dropdown-content .dropdown-item .icon i,
+#edit-category-dropdown .dropdown-content .dropdown-item .icon i {
+    font-size: 0.9rem;
+}
+
+/* On mobile, keep dropdown full width and avoid covering input fields */
 @media screen and (max-width: 768px) {
-    .toastify {
-        font-size: 13px;
-        max-width: 90vw;
-        margin-right: 1rem;
+    #create-category-dropdown .dropdown-menu,
+    #edit-category-dropdown .dropdown-menu {
+        left: 0;
+        right: 0;
     }
 }
