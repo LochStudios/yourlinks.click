@@ -47,9 +47,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (isset($_POST['deactivate_link']) && isset($_POST['link_id'])) {
         $db->execute("UPDATE links SET is_active = FALSE WHERE id = ? AND user_id = ?", [$_POST['link_id'], $_SESSION['user_id']]);
         $success = "Link deactivated successfully!";
-    } elseif (isset($_POST['delete_link']) && isset($_POST['link_id'])) {
-        $db->execute("DELETE FROM links WHERE id = ? AND user_id = ?", [$_POST['link_id'], $_SESSION['user_id']]);
-        $success = "Link deleted successfully!";
+    } elseif (isset($_POST['update_custom_domain'])) {
+        $customDomain = trim($_POST['custom_domain']);
+        $domainError = null;
+        
+        if (!empty($customDomain)) {
+            // Validate domain format
+            if (!preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $customDomain)) {
+                $domainError = "Please enter a valid domain name.";
+            } elseif (substr($customDomain, 0, 4) === 'www.') {
+                $domainError = "Please enter the domain without 'www.' (e.g., example.com).";
+            } else {
+                // Check if domain is already used by another user
+                $existingDomain = $db->select("SELECT id FROM users WHERE custom_domain = ? AND id != ?", [$customDomain, $_SESSION['user_id']]);
+                if ($existingDomain) {
+                    $domainError = "This domain is already in use by another user.";
+                }
+            }
+        }
+        
+        if (!$domainError) {
+            $db->execute(
+                "UPDATE users SET custom_domain = ?, domain_verified = FALSE WHERE id = ?",
+                [$customDomain ?: null, $_SESSION['user_id']]
+            );
+            $success = empty($customDomain) ? "Custom domain removed successfully!" : "Custom domain updated! Please verify ownership.";
+        } else {
+            $error = $domainError;
+        }
+    } elseif (isset($_POST['verify_domain'])) {
+        // Generate verification token
+        $verificationToken = bin2hex(random_bytes(16));
+        $db->execute(
+            "UPDATE users SET domain_verification_token = ? WHERE id = ?",
+            [$verificationToken, $_SESSION['user_id']]
+        );
+        
+        // Get user's custom domain
+        $userData = $db->select("SELECT custom_domain FROM users WHERE id = ?", [$_SESSION['user_id']]);
+        if ($userData && $userData[0]['custom_domain']) {
+            $success = "Verification instructions sent! Add this TXT record to your DNS: " . $verificationToken;
+        }
     }
 }
 ?>
@@ -115,6 +153,136 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                 </div>
+            </div>
+            <!-- Custom Domain Section -->
+            <div class="box has-background-dark-ter has-text-light mt-5">
+                <h2 class="title is-4 has-text-primary">
+                    <i class="fas fa-globe has-text-primary"></i> Custom Domain
+                </h2>
+                <p class="subtitle is-6 has-text-grey-light mb-4">
+                    Use your own domain instead of the subdomain format
+                </p>
+                
+                <?php
+                // Get user's custom domain info
+                $userDomainInfo = $db->select("SELECT custom_domain, domain_verified, domain_verification_token FROM users WHERE id = ?", [$_SESSION['user_id']]);
+                $customDomain = $userDomainInfo[0]['custom_domain'] ?? '';
+                $domainVerified = $userDomainInfo[0]['domain_verified'] ?? false;
+                $verificationToken = $userDomainInfo[0]['domain_verification_token'] ?? '';
+                ?>
+                
+                <form method="POST" action="">
+                    <div class="field">
+                        <label class="label" for="custom_domain">
+                            <i class="fas fa-domain"></i> Your Custom Domain
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="custom_domain" name="custom_domain" 
+                                   value="<?php echo htmlspecialchars($customDomain); ?>"
+                                   placeholder="e.g., mydomain.com">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-globe"></i>
+                            </span>
+                        </div>
+                        <p class="help">
+                            Enter your domain without 'www' or 'http'. Example: mydomain.com
+                        </p>
+                        <?php if ($customDomain && $domainVerified): ?>
+                            <p class="help has-text-success">
+                                <i class="fas fa-check-circle"></i> Domain verified! Your links will work at <?php echo htmlspecialchars($customDomain); ?>/linkname
+                            </p>
+                        <?php elseif ($customDomain && !$domainVerified): ?>
+                            <p class="help has-text-warning">
+                                <i class="fas fa-exclamation-triangle"></i> Domain not verified yet. Please add the DNS record below.
+                            </p>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="field">
+                        <div class="control">
+                            <button type="submit" name="update_custom_domain" class="button is-primary">
+                                <span class="icon">
+                                    <i class="fas fa-save"></i>
+                                </span>
+                                <span><?php echo $customDomain ? 'Update Domain' : 'Add Custom Domain'; ?></span>
+                            </button>
+                            <?php if ($customDomain && !$domainVerified): ?>
+                                <button type="submit" name="verify_domain" class="button is-info ml-2">
+                                    <span class="icon">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </span>
+                                    <span>Verify Domain</span>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </form>
+                
+                <?php if ($customDomain && !$domainVerified && $verificationToken): ?>
+                <div class="notification is-info is-dark mt-4">
+                    <h4 class="title is-5 has-text-info">
+                        <i class="fas fa-dns"></i> DNS Verification Required
+                    </h4>
+                    <p class="mb-3">To verify ownership of <strong><?php echo htmlspecialchars($customDomain); ?></strong>, add this TXT record to your DNS settings:</p>
+                    
+                    <div class="field">
+                        <label class="label">Record Type:</label>
+                        <div class="control">
+                            <input class="input" type="text" value="TXT" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label">Name/Host:</label>
+                        <div class="control">
+                            <input class="input" type="text" value="_yourlinks_verification.<?php echo htmlspecialchars($customDomain); ?>" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label">Value:</label>
+                        <div class="control">
+                            <input class="input" type="text" value="<?php echo htmlspecialchars($verificationToken); ?>" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label">TTL:</label>
+                        <div class="control">
+                            <input class="input" type="text" value="300" readonly>
+                        </div>
+                    </div>
+                    
+                    <p class="mt-3">
+                        <strong>Instructions:</strong><br>
+                        1. Go to your domain registrar's DNS settings<br>
+                        2. Add the TXT record above<br>
+                        3. Wait 5-10 minutes for DNS propagation<br>
+                        4. Click "Verify Domain" button above<br>
+                        5. Your custom domain will be activated!
+                    </p>
+                    
+                    <div class="content mt-3">
+                        <h5 class="title is-6">Example Links:</h5>
+                        <ul>
+                            <li><code><?php echo htmlspecialchars($customDomain); ?>/youtube</code> → Your YouTube channel</li>
+                            <li><code><?php echo htmlspecialchars($customDomain); ?>/twitter</code> → Your Twitter profile</li>
+                            <li><code><?php echo htmlspecialchars($customDomain); ?>/discord</code> → Your Discord server</li>
+                        </ul>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($customDomain && $domainVerified): ?>
+                <div class="notification is-success is-dark mt-4">
+                    <h4 class="title is-5 has-text-success">
+                        <i class="fas fa-check-circle"></i> Custom Domain Active!
+                    </h4>
+                    <p>Your links are now available at:</p>
+                    <p class="has-text-weight-bold"><?php echo htmlspecialchars($customDomain); ?>/linkname</p>
+                    <p class="mt-2">You can still use the subdomain format if needed.</p>
+                </div>
+                <?php endif; ?>
             </div>
             <!-- Success/Error Messages -->
             <?php if (isset($success)): ?>
@@ -201,7 +369,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </span>
                         </div>
                         <p class="help">
-                            Your link will be: <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></strong>
+                            <?php if ($customDomain && $domainVerified): ?>
+                                Your link will be available at:<br>
+                                <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></strong><br>
+                                <strong><?php echo htmlspecialchars($customDomain); ?>/<span id="preview-name-custom">linkname</span></strong>
+                            <?php else: ?>
+                                Your link will be: <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></strong>
+                                <?php if ($customDomain && !$domainVerified): ?>
+                                    <br><em class="has-text-warning">Custom domain available after verification</em>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         </p>
                     </div>
                     <div class="field">
@@ -353,10 +530,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('link_name').addEventListener('input', function() {
             const linkName = this.value.trim();
             const previewElement = document.getElementById('preview-name');
+            const previewElementCustom = document.getElementById('preview-name-custom');
+            
             if (linkName) {
-                previewElement.textContent = linkName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '');
+                const cleanName = linkName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '');
+                if (previewElement) previewElement.textContent = cleanName;
+                if (previewElementCustom) previewElementCustom.textContent = cleanName;
             } else {
-                previewElement.textContent = 'linkname';
+                if (previewElement) previewElement.textContent = 'linkname';
+                if (previewElementCustom) previewElementCustom.textContent = 'linkname';
             }
         });
         // Search functionality for links table

@@ -6,6 +6,7 @@ A PHP-based link shortening and management service with Twitch OAuth authenticat
 
 - **Twitch OAuth Login**: Secure authentication using Twitch accounts
 - **Custom Subdomains**: Each user gets their own subdomain (username.yourlinks.click)
+- **Custom Domains**: Users can use their own domains (mydomain.com/link)
 - **Link Management**: Create and manage personalized links through dashboard
 - **Analytics**: Track clicks and performance metrics
 - **User Dashboard**: Manage your links in a clean interface
@@ -24,6 +25,7 @@ A PHP-based link shortening and management service with Twitch OAuth authenticat
 
 - User "exampleuser" creates a link named "youtube" pointing to "https://youtube.com/"
 - The link becomes: `https://exampleuser.yourlinks.click/youtube`
+- With custom domain: `https://mydomain.com/youtube`
 - When clicked, visitors are redirected to the YouTube channel
 
 ## Setup Instructions
@@ -129,6 +131,11 @@ For the subdomain system to work, you need to set up wildcard subdomains in cPan
    - Get a wildcard SSL certificate for `*.yourlinks.click`
    - Or use Let's Encrypt with DNS challenge for wildcard certificates
 
+5. **Custom Domain Setup** (Optional):
+   - Users can add their own domains in the dashboard
+   - Domain ownership is verified via DNS TXT records
+   - SSL certificates are automatically managed for custom domains
+
 Ensure the web server can write to necessary directories (if any):
 ```bash
 chmod 755 /path/to/yourlinks.click
@@ -208,3 +215,14 @@ The application uses:
 - [ ] Set up SSL certificates
 - [ ] Test the application functionality
 - [ ] Verify .gitignore excludes sensitive files
+
+## Database Migration
+
+If you're adding custom domain support to an existing installation, run the migration:
+
+```sql
+-- Run this SQL to add custom domain columns
+source custom_domain_migration.sql;
+```
+
+This adds the necessary columns for custom domain functionality.

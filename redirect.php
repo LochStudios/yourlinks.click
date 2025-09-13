@@ -10,9 +10,24 @@ $db = Database::getInstance();
 $host = $_SERVER['HTTP_HOST'];
 $requestUri = $_SERVER['REQUEST_URI'];
 
-// Extract subdomain from host
-$parts = explode('.', $host);
-$subdomain = $parts[0];
+// Check if this is a custom domain request
+$customDomainUser = null;
+if ($host !== 'yourlinks.click' && $host !== 'www.yourlinks.click' && strpos($host, '.yourlinks.click') === false) {
+    // This might be a custom domain - check if it belongs to a user
+    $customDomainUser = $db->select("SELECT id, username FROM users WHERE custom_domain = ? AND domain_verified = TRUE", [$host]);
+    if ($customDomainUser) {
+        $subdomain = $customDomainUser[0]['username'];
+    } else {
+        // Not a recognized custom domain
+        header('HTTP/1.0 404 Not Found');
+        echo 'Domain not found';
+        exit();
+    }
+} else {
+    // Extract subdomain from host for yourlinks.click domains
+    $parts = explode('.', $host);
+    $subdomain = $parts[0];
+}
 
 // If it's the main domain, redirect to home
 if ($subdomain === 'yourlinks' || $subdomain === 'www') {
