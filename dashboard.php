@@ -61,95 +61,206 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - YourLinks.click</title>
+
+    <!-- Bulma CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/site.css">
 </head>
-<body class="dashboard-page">
-    <div class="header">
-        <h1>YourLinks.click Dashboard</h1>
-        <div class="user-info">
-            <img src="<?php echo htmlspecialchars($user['profile_image_url']); ?>" alt="Profile" class="user-avatar">
-            <div>
-                <strong><?php echo htmlspecialchars($user['display_name']); ?></strong>
-                <br>
-                <small><?php echo htmlspecialchars($user['login']); ?></small>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/">
+                <i class="fas fa-link"></i>
+                <strong>YourLinks.click</strong>
+            </a>
+        </div>
+
+        <div class="navbar-menu">
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a href="/services/twitch.php?logout=true" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </span>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-        <a href="/services/twitch.php?logout=true" class="logout-btn">Logout</a>
-    </div>
+    </nav>
 
-    <div class="dashboard-content">
-        <div class="welcome">
-            <h2>Welcome back, <?php echo htmlspecialchars($user['display_name']); ?>!</h2>
-            <p>Manage your links and view analytics from your dashboard.</p>
+    <!-- Main Content -->
+    <section class="section">
+        <div class="container">
+            <!-- User Info Header -->
+            <div class="card">
+                <div class="card-content">
+                    <div class="media">
+                        <div class="media-left">
+                            <figure class="image is-64x64">
+                                <img src="<?php echo htmlspecialchars($user['profile_image_url']); ?>" alt="Profile" class="is-rounded">
+                            </figure>
+                        </div>
+                        <div class="media-content">
+                            <p class="title is-4">
+                                <i class="fas fa-user"></i> Welcome back, <?php echo htmlspecialchars($user['display_name']); ?>!
+                            </p>
+                            <p class="subtitle is-6">
+                                <i class="fab fa-twitch"></i> @<?php echo htmlspecialchars($user['login']); ?>
+                            </p>
+                            <p class="content">Manage your links and view analytics from your dashboard.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success/Error Messages -->
             <?php if (isset($success)): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+                <div class="notification is-success is-light">
+                    <button class="delete"></button>
+                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                </div>
             <?php endif; ?>
             <?php if (isset($error)): ?>
-                <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+                <div class="notification is-danger is-light">
+                    <button class="delete"></button>
+                    <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+                </div>
             <?php endif; ?>
-        </div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number">
-                    <?php
-                    // Get total links count
-                    $linksCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ?", [$_SESSION['user_id']]);
-                    echo $linksCount[0]['count'] ?? 0;
-                    ?>
+            <!-- Stats Cards -->
+            <div class="columns is-multiline mt-5">
+                <div class="column is-4">
+                    <div class="card has-background-primary has-text-white">
+                        <div class="card-content has-text-centered">
+                            <div class="content">
+                                <p class="title is-2">
+                                    <?php
+                                    $linksCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ?", [$_SESSION['user_id']]);
+                                    echo $linksCount[0]['count'] ?? 0;
+                                    ?>
+                                </p>
+                                <p class="subtitle is-5">
+                                    <i class="fas fa-link"></i> Total Links
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div>Total Links</div>
+                <div class="column is-4">
+                    <div class="card has-background-info has-text-white">
+                        <div class="card-content has-text-centered">
+                            <div class="content">
+                                <p class="title is-2">
+                                    <?php
+                                    $clicksCount = $db->select("SELECT SUM(clicks) as total FROM links WHERE user_id = ?", [$_SESSION['user_id']]);
+                                    echo $clicksCount[0]['total'] ?? 0;
+                                    ?>
+                                </p>
+                                <p class="subtitle is-5">
+                                    <i class="fas fa-mouse-pointer"></i> Total Clicks
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-4">
+                    <div class="card has-background-success has-text-white">
+                        <div class="card-content has-text-centered">
+                            <div class="content">
+                                <p class="title is-2">
+                                    <?php
+                                    $activeCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND is_active = TRUE", [$_SESSION['user_id']]);
+                                    echo $activeCount[0]['count'] ?? 0;
+                                    ?>
+                                </p>
+                                <p class="subtitle is-5">
+                                    <i class="fas fa-check-circle"></i> Active Links
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">
-                    <?php
-                    // Get total clicks
-                    $clicksCount = $db->select("SELECT SUM(clicks) as total FROM links WHERE user_id = ?", [$_SESSION['user_id']]);
-                    echo $clicksCount[0]['total'] ?? 0;
-                    ?>
-                </div>
-                <div>Total Clicks</div>
+
+            <!-- Link Management Section -->
+            <div class="box">
+                <h2 class="title is-4">
+                    <i class="fas fa-plus-circle"></i> Create New Link
+                </h2>
+
+                <form method="POST" action="">
+                    <div class="field">
+                        <label class="label" for="link_name">
+                            <i class="fas fa-tag"></i> Link Name
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="link_name" name="link_name" required
+                                   placeholder="e.g., youtube, twitter, discord">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-link"></i>
+                            </span>
+                        </div>
+                        <p class="help">
+                            Your link will be: <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></strong>
+                        </p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="original_url">
+                            <i class="fas fa-external-link-alt"></i> Destination URL
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="url" id="original_url" name="original_url" required
+                                   placeholder="https://example.com/your-profile">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-globe"></i>
+                            </span>
+                        </div>
+                        <p class="help">The URL where visitors will be redirected</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="title">
+                            <i class="fas fa-heading"></i> Title (Optional)
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="title" name="title"
+                                   placeholder="Display name for this link">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-i-cursor"></i>
+                            </span>
+                        </div>
+                        <p class="help">A friendly name to help you remember this link</p>
+                    </div>
+
+                    <div class="field">
+                        <div class="control">
+                            <button type="submit" name="create_link" class="button is-primary is-medium">
+                                <span class="icon">
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                                <span>Create Link</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">
-                    <?php
-                    // Get active links
-                    $activeCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND is_active = TRUE", [$_SESSION['user_id']]);
-                    echo $activeCount[0]['count'] ?? 0;
-                    ?>
-                </div>
-                <div>Active Links</div>
-            </div>
-        </div>
 
-        <!-- Link Management Section -->
-        <div class="link-management">
-            <h2>Create New Link</h2>
-            <form method="POST" action="" class="create-link-form">
-                <div class="form-group">
-                    <label for="link_name">Link Name:</label>
-                    <input type="text" id="link_name" name="link_name" required
-                           placeholder="e.g., youtube, twitter, discord">
-                    <small>Your link will be: <?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></small>
-                </div>
+            <!-- Links Table -->
+            <div class="box">
+                <h2 class="title is-4">
+                    <i class="fas fa-list"></i> Your Links
+                </h2>
 
-                <div class="form-group">
-                    <label for="original_url">Destination URL:</label>
-                    <input type="url" id="original_url" name="original_url" required
-                           placeholder="https://example.com/your-profile">
-                </div>
-
-                <div class="form-group">
-                    <label for="title">Title (optional):</label>
-                    <input type="text" id="title" name="title"
-                           placeholder="Display name for this link">
-                </div>
-
-                <button type="submit" name="create_link" class="btn-primary">Create Link</button>
-            </form>
-
-            <h2>Your Links</h2>
-            <div class="links-table">
                 <?php
                 $userLinks = $db->select(
                     "SELECT * FROM links WHERE user_id = ? ORDER BY created_at DESC",
@@ -157,17 +268,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
 
                 if (empty($userLinks)) {
-                    echo '<p>You haven\'t created any links yet. Create your first link above!</p>';
+                    echo '<div class="notification is-info is-light">';
+                    echo '<i class="fas fa-info-circle"></i> You haven\'t created any links yet. Create your first link above!';
+                    echo '</div>';
                 } else {
-                    echo '<table>';
+                    echo '<div class="table-container">';
+                    echo '<table class="table is-fullwidth is-hoverable is-striped">';
                     echo '<thead>';
                     echo '<tr>';
-                    echo '<th>Link Name</th>';
-                    echo '<th>Destination</th>';
-                    echo '<th>Title</th>';
-                    echo '<th>Clicks</th>';
-                    echo '<th>Status</th>';
-                    echo '<th>Actions</th>';
+                    echo '<th><i class="fas fa-tag"></i> Link Name</th>';
+                    echo '<th><i class="fas fa-external-link-alt"></i> Destination</th>';
+                    echo '<th><i class="fas fa-heading"></i> Title</th>';
+                    echo '<th><i class="fas fa-mouse-pointer"></i> Clicks</th>';
+                    echo '<th><i class="fas fa-toggle-on"></i> Status</th>';
+                    echo '<th><i class="fas fa-cogs"></i> Actions</th>';
                     echo '</tr>';
                     echo '</thead>';
                     echo '<tbody>';
@@ -175,35 +289,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($userLinks as $link) {
                         $fullUrl = 'https://' . $user['login'] . '.yourlinks.click/' . $link['link_name'];
                         $status = $link['is_active'] ? 'Active' : 'Inactive';
-                        $statusClass = $link['is_active'] ? 'status-active' : 'status-inactive';
+                        $statusClass = $link['is_active'] ? 'has-text-success' : 'has-text-danger';
 
                         echo '<tr>';
-                        echo '<td><a href="' . htmlspecialchars($fullUrl) . '" target="_blank">' . htmlspecialchars($link['link_name']) . '</a></td>';
-                        echo '<td><a href="' . htmlspecialchars($link['original_url']) . '" target="_blank">' . htmlspecialchars($link['original_url']) . '</a></td>';
-                        echo '<td>' . htmlspecialchars($link['title'] ?? '') . '</td>';
-                        echo '<td>' . $link['clicks'] . '</td>';
-                        echo '<td><span class="' . $statusClass . '">' . $status . '</span></td>';
                         echo '<td>';
-                        echo '<form method="POST" action="" style="display: inline;">';
-                        echo '<input type="hidden" name="link_id" value="' . $link['id'] . '">';
+                        echo '<a href="' . htmlspecialchars($fullUrl) . '" target="_blank" class="has-text-link">';
+                        echo '<i class="fas fa-external-link-alt"></i> ' . htmlspecialchars($link['link_name']);
+                        echo '</a>';
+                        echo '</td>';
+                        echo '<td>';
+                        echo '<a href="' . htmlspecialchars($link['original_url']) . '" target="_blank" class="has-text-grey">';
+                        echo htmlspecialchars($link['original_url']);
+                        echo '</a>';
+                        echo '</td>';
+                        echo '<td>' . htmlspecialchars($link['title'] ?? '') . '</td>';
+                        echo '<td><span class="tag is-info is-light">' . $link['clicks'] . '</span></td>';
+                        echo '<td><span class="tag ' . ($link['is_active'] ? 'is-success' : 'is-danger') . '">' . $status . '</span></td>';
+                        echo '<td>';
+                        echo '<div class="buttons are-small">';
                         if ($link['is_active']) {
-                            echo '<button type="submit" name="deactivate_link" class="btn-secondary">Deactivate</button>';
+                            echo '<button type="button" class="button is-warning deactivate-btn" data-link-id="' . $link['id'] . '">';
+                            echo '<span class="icon"><i class="fas fa-pause"></i></span>';
+                            echo '<span>Deactivate</span>';
+                            echo '</button>';
                         } else {
-                            echo '<button type="submit" name="activate_link" class="btn-primary">Activate</button>';
+                            echo '<button type="button" class="button is-success activate-btn" data-link-id="' . $link['id'] . '">';
+                            echo '<span class="icon"><i class="fas fa-play"></i></span>';
+                            echo '<span>Activate</span>';
+                            echo '</button>';
                         }
-                        echo '<button type="submit" name="delete_link" class="btn-danger" onclick="return confirm(\'Are you sure you want to delete this link?\')">Delete</button>';
+                        echo '<button type="button" class="button is-danger delete-btn" data-link-id="' . $link['id'] . '">';
+                        echo '<span class="icon"><i class="fas fa-trash"></i></span>';
+                        echo '<span>Delete</span>';
+                        echo '</button>';
+                        echo '</div>';
+
+                        // Hidden forms for POST actions
+                        echo '<form method="POST" action="" class="is-hidden" id="activate-form-' . $link['id'] . '">';
+                        echo '<input type="hidden" name="link_id" value="' . $link['id'] . '">';
+                        echo '<input type="hidden" name="activate_link" value="1">';
                         echo '</form>';
+
+                        echo '<form method="POST" action="" class="is-hidden" id="deactivate-form-' . $link['id'] . '">';
+                        echo '<input type="hidden" name="link_id" value="' . $link['id'] . '">';
+                        echo '<input type="hidden" name="deactivate_link" value="1">';
+                        echo '</form>';
+
+                        echo '<form method="POST" action="" class="is-hidden" id="delete-form-' . $link['id'] . '">';
+                        echo '<input type="hidden" name="link_id" value="' . $link['id'] . '">';
+                        echo '<input type="hidden" name="delete_link" value="1">';
+                        echo '</form>';
+
                         echo '</td>';
                         echo '</tr>';
                     }
 
                     echo '</tbody>';
                     echo '</table>';
+                    echo '</div>';
                 }
                 ?>
             </div>
         </div>
-    </div>
+    </section>
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         // Live preview of link URL
@@ -215,6 +366,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 previewElement.textContent = 'linkname';
             }
+        });
+
+        // SweetAlert2 for actions
+        document.querySelectorAll('.activate-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const linkId = this.getAttribute('data-link-id');
+                Swal.fire({
+                    title: 'Activate Link?',
+                    text: 'This link will become active and redirect visitors.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#48c774',
+                    cancelButtonColor: '#f14668',
+                    confirmButtonText: 'Yes, activate it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('activate-form-' + linkId).submit();
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.deactivate-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const linkId = this.getAttribute('data-link-id');
+                Swal.fire({
+                    title: 'Deactivate Link?',
+                    text: 'This link will no longer redirect visitors.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f39c12',
+                    cancelButtonColor: '#f14668',
+                    confirmButtonText: 'Yes, deactivate it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('deactivate-form-' + linkId).submit();
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const linkId = this.getAttribute('data-link-id');
+                Swal.fire({
+                    title: 'Delete Link?',
+                    text: 'This action cannot be undone. The link will be permanently deleted.',
+                    icon: 'error',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f14668',
+                    cancelButtonColor: '#363636',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('delete-form-' + linkId).submit();
+                    }
+                });
+            });
+        });
+
+        // Close notifications
+        document.querySelectorAll('.notification .delete').forEach(deleteBtn => {
+            deleteBtn.addEventListener('click', function() {
+                this.parentNode.style.display = 'none';
+            });
         });
     </script>
 </body>
