@@ -13,6 +13,12 @@ require_once 'services/database.php';
 $db = Database::getInstance();
 $user = $_SESSION['twitch_user'];
 
+// Get user's links for search functionality
+$userLinks = $db->select(
+    "SELECT * FROM links WHERE user_id = ? ORDER BY created_at DESC",
+    [$_SESSION['user_id']]
+);
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['create_link'])) {
@@ -449,10 +455,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <?php
-                $userLinks = $db->select(
-                    "SELECT * FROM links WHERE user_id = ? ORDER BY created_at DESC",
-                    [$_SESSION['user_id']]
-                );
                 if (empty($userLinks)) {
                     echo '<div class="notification is-info is-dark">';
                     echo '<i class="fas fa-info-circle"></i> You haven\'t created any links yet. Create your first link above!';
