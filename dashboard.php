@@ -274,7 +274,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif (isset($_POST['delete_category']) && isset($_POST['category_id'])) {
         $categoryId = (int)$_POST['category_id'];
-
         // Check if category has links
         $linksInCategory = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND category_id = ?", [$_SESSION['user_id'], $categoryId]);
         if ($linksInCategory[0]['count'] > 0) {
@@ -1124,6 +1123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </footer>
         </div>
     </div>
+
+    <!-- Edit Link Modal -->
+    <div class="modal" id="edit-link-modal">
         <div class="modal-background"></div>
         <div class="modal-card">
             <header class="modal-card-head has-background-dark">
