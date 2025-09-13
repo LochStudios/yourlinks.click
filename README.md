@@ -9,6 +9,7 @@ A PHP-based link shortening and management service with Twitch OAuth authenticat
 - **Custom Domains**: Users can use their own domains (mydomain.com/link)
 - **Link Management**: Create and manage personalized links through dashboard
 - **Link Categories**: Organize links into custom categories with colors and icons
+- **Link Expiration**: Set expiration dates for links with custom behaviors
 - **Analytics**: Track clicks and performance metrics
 - **User Dashboard**: Manage your links in a clean interface
 - **MySQL Database**: Robust data storage with proper relationships
@@ -327,6 +328,20 @@ source database_categories_migration.sql;
 
 This creates the categories table and adds the category_id column to the links table.
 
+### Expiration Feature Migration
+
+To add the link expiration feature to an existing installation:
+
+```sql
+-- Run this SQL to add expiration support
+source database_categories_migration.sql;
+```
+
+This adds expiration columns to the links table:
+- `expires_at`: DATETIME for expiration timestamp
+- `expired_redirect_url`: TEXT for custom redirect URL
+- `expiration_behavior`: ENUM for behavior type
+
 ## Link Categories Feature
 
 The application includes a comprehensive link categorization system:
@@ -373,3 +388,60 @@ ALTER TABLE links ADD COLUMN category_id INT NULL;
 ALTER TABLE links ADD CONSTRAINT fk_links_category_id
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;
 ```
+
+## Link Expiration Feature
+
+The application includes a comprehensive link expiration system that allows users to set time-based expiration for their links:
+
+### **Expiration Options**
+- **No Expiration**: Links remain active indefinitely (default)
+- **Custom Date/Time**: Set specific expiration date and time
+- **Expiration Behaviors**:
+  - **Inactive**: Link becomes inactive (404 error)
+  - **Redirect**: Redirect to a custom URL when expired
+  - **Custom Page**: Show a custom expired page (planned feature)
+
+### **Expiration Management**
+- **Date Picker**: User-friendly datetime picker for setting expiration
+- **Validation**: Prevents setting expiration dates in the past
+- **Visual Indicators**: 
+  - Green tags for active links with future expiration
+  - Yellow warning tags for links expiring within 7 days
+  - Red danger tags for expired links
+- **Dashboard Display**: Expiration status shown in links table
+
+### **Expiration Behaviors**
+- **Inactive Links**: Expired links return 404 errors
+- **Redirect Links**: Expired links redirect to user-specified URLs
+- **Custom Pages**: Future feature for branded expired link pages
+
+### **Database Schema**
+```sql
+-- Links table expiration columns
+ALTER TABLE links ADD COLUMN expires_at DATETIME NULL;
+ALTER TABLE links ADD COLUMN expired_redirect_url TEXT NULL;
+ALTER TABLE links ADD COLUMN expiration_behavior ENUM('inactive', 'redirect', 'custom_page') DEFAULT 'inactive';
+
+-- Index for performance
+CREATE INDEX idx_links_expires_at ON links(expires_at);
+```
+
+### **Usage Examples**
+- **Temporary Promotions**: Set expiration for limited-time offers
+- **Event Links**: Links that expire after an event ends
+- **Seasonal Content**: Links that automatically deactivate after a season
+- **Time-Sensitive Information**: Links that should not be accessible after a certain date
+
+### **Testing the Feature**
+A test script is included to verify expiration functionality:
+
+```bash
+# Access the test page
+https://yourlinks.click/test_expiration.php
+```
+
+The test page allows you to:
+- Create test links with different expiration behaviors
+- Monitor expiration status in real-time
+- Test expired link handling
+- Clean up test data

@@ -15,7 +15,12 @@ $user = $_SESSION['twitch_user'];
 
 // Get user's links for search functionality
 $userLinks = $db->select(
-    "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon
+    "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
+     CASE 
+         WHEN l.expires_at IS NOT NULL AND l.expires_at <= NOW() THEN 'expired'
+         WHEN l.expires_at IS NOT NULL AND l.expires_at <= DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'expiring_soon'
+         ELSE 'active'
+     END as expiration_status
      FROM links l
      LEFT JOIN categories c ON l.category_id = c.id
      WHERE l.user_id = ? ORDER BY l.created_at DESC",
@@ -60,6 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $originalUrl = trim($_POST['original_url']);
         $title = trim($_POST['title'] ?? '');
         $categoryId = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null;
+        $expiresAt = !empty($_POST['expires_at']) ? $_POST['expires_at'] : null;
+        $expirationBehavior = $_POST['expiration_behavior'] ?? 'inactive';
+        $expiredRedirectUrl = trim($_POST['expired_redirect_url'] ?? '');
+        
         // Validate inputs
         if (empty($linkName) || empty($originalUrl)) {
             $error = "Link name and destination URL are required.";
@@ -67,6 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Please enter a valid URL.";
         } elseif (!preg_match('/^[a-zA-Z0-9_-]+$/', $linkName)) {
             $error = "Link name can only contain letters, numbers, hyphens, and underscores.";
+        } elseif ($expiresAt && strtotime($expiresAt) <= time()) {
+            $error = "Expiration date must be in the future.";
+        } elseif ($expirationBehavior === 'redirect' && empty($expiredRedirectUrl)) {
+            $error = "Redirect URL is required when expiration behavior is set to redirect.";
+        } elseif ($expirationBehavior === 'redirect' && !filter_var($expiredRedirectUrl, FILTER_VALIDATE_URL)) {
+            $error = "Please enter a valid redirect URL.";
         } else {
             // Check if link name already exists for this user
             $existing = $db->select("SELECT id FROM links WHERE user_id = ? AND link_name = ?", [$_SESSION['user_id'], $linkName]);
@@ -75,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Create the link
                 $db->insert(
-                    "INSERT INTO links (user_id, link_name, original_url, title, category_id) VALUES (?, ?, ?, ?, ?)",
-                    [$_SESSION['user_id'], $linkName, $originalUrl, $title, $categoryId]
+                    "INSERT INTO links (user_id, link_name, original_url, title, category_id, expires_at, expired_redirect_url, expiration_behavior) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$_SESSION['user_id'], $linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expirationBehavior]
                 );
                 $success = "Link created successfully!";
             }
@@ -679,6 +694,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <p class="help">Organize your links into categories for better management</p>
                     </div>
                     <div class="field">
+                        <label class="label" for="expires_at">
+                            <i class="fas fa-clock"></i> Expiration Date (Optional)
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="datetime-local" id="expires_at" name="expires_at"
+                                   min="<?php echo date('Y-m-d\TH:i'); ?>">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                        </div>
+                        <p class="help">Set when this link should expire. Leave empty for no expiration.</p>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="expiration_behavior">
+                            <i class="fas fa-exclamation-triangle"></i> When Link Expires
+                        </label>
+                        <div class="control has-icons-left">
+                            <div class="select is-fullwidth">
+                                <select id="expiration_behavior" name="expiration_behavior">
+                                    <option value="inactive">Make link inactive (404 error)</option>
+                                    <option value="redirect">Redirect to custom URL</option>
+                                    <option value="custom_page">Show custom expired page</option>
+                                </select>
+                            </div>
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-toggle-off"></i>
+                            </span>
+                        </div>
+                        <p class="help">Choose what happens when the link expires</p>
+                    </div>
+                    <div class="field" id="expired_redirect_field" style="display: none;">
+                        <label class="label" for="expired_redirect_url">
+                            <i class="fas fa-external-link-alt"></i> Expired Redirect URL
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="url" id="expired_redirect_url" name="expired_redirect_url"
+                                   placeholder="https://example.com/expired">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-globe"></i>
+                            </span>
+                        </div>
+                        <p class="help">URL to redirect visitors when this link expires</p>
+                    </div>
+                    <div class="field">
                         <div class="control">
                             <button type="submit" name="create_link" class="button is-primary is-medium">
                                 <span class="icon">
@@ -725,6 +784,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo '<th><i class="fas fa-external-link-alt"></i> Destination</th>';
                     echo '<th><i class="fas fa-heading"></i> Title</th>';
                     echo '<th><i class="fas fa-folder"></i> Category</th>';
+                    echo '<th><i class="fas fa-clock"></i> Expires</th>';
                     echo '<th><i class="fas fa-mouse-pointer"></i> Clicks</th>';
                     echo '<th><i class="fas fa-toggle-on"></i> Status</th>';
                     echo '<th><i class="fas fa-cogs"></i> Actions</th>';
@@ -756,7 +816,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             echo htmlspecialchars($link['category_name']);
                             echo '</span>';
                         } else {
-                            echo '<span class="tag is-grey is-light">No Category</span>';
+                            echo '<span class="tag is-dark has-text-grey-light">';
+                            echo '<i class="fas fa-question-circle mr-1"></i>';
+                            echo 'No Category';
+                            echo '</span>';
+                        }
+                        echo '</td>';
+                        echo '<td>';
+                        if (!empty($link['expires_at'])) {
+                            $expiresAt = strtotime($link['expires_at']);
+                            $now = time();
+                            $daysUntilExpiry = floor(($expiresAt - $now) / (60 * 60 * 24));
+                            
+                            if ($link['expiration_status'] === 'expired') {
+                                echo '<span class="tag is-danger">';
+                                echo '<i class="fas fa-exclamation-triangle mr-1"></i>';
+                                echo 'Expired';
+                            } elseif ($link['expiration_status'] === 'expiring_soon') {
+                                echo '<span class="tag is-warning">';
+                                echo '<i class="fas fa-clock mr-1"></i>';
+                                echo 'Expires in ' . $daysUntilExpiry . ' day' . ($daysUntilExpiry !== 1 ? 's' : '');
+                            } else {
+                                echo '<span class="tag is-info is-light">';
+                                echo '<i class="fas fa-calendar-alt mr-1"></i>';
+                                echo date('M j, Y g:i A', $expiresAt);
+                            }
+                            echo '</span>';
+                        } else {
+                            echo '<span class="tag is-dark has-text-grey-light">';
+                            echo '<i class="fas fa-infinity mr-1"></i>';
+                            echo 'Never';
+                            echo '</span>';
                         }
                         echo '</td>';
                         echo '<td><span class="tag is-info is-light">' . $link['clicks'] . '</span></td>';
@@ -887,6 +977,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (previewElementCustom) previewElementCustom.textContent = 'linkname';
             }
         });
+
+        // Expiration behavior dropdown handler
+        document.getElementById('expiration_behavior').addEventListener('change', function() {
+            const expiredRedirectField = document.getElementById('expired_redirect_field');
+            const expiredRedirectInput = document.getElementById('expired_redirect_url');
+            
+            if (this.value === 'redirect') {
+                expiredRedirectField.style.display = 'block';
+                expiredRedirectInput.required = true;
+            } else {
+                expiredRedirectField.style.display = 'none';
+                expiredRedirectInput.required = false;
+                expiredRedirectInput.value = '';
+            }
+        });
+
+        // Set minimum datetime for expiration
+        document.getElementById('expires_at').addEventListener('focus', function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            this.min = now.toISOString().slice(0, 16);
+        });
+
         // Search functionality for links table
         const searchInput = document.getElementById('link-search');
         if (searchInput) {

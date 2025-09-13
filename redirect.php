@@ -54,12 +54,11 @@ if (empty($linkName)) {
     }
 }
 
-// Find the link in database
+// Find the link in database (including expired links to handle expiration behavior)
 $link = $db->select(
     "SELECT l.*, u.username FROM links l
         JOIN users u ON l.user_id = u.id
-        WHERE u.username = ? AND l.link_name = ? AND l.is_active = TRUE
-        AND (l.expires_at IS NULL OR l.expires_at > NOW())",
+        WHERE u.username = ? AND l.link_name = ? AND l.is_active = TRUE",
     [$subdomain, $linkName]
 );
 
@@ -71,6 +70,53 @@ if (!$link) {
 
 $linkData = $link[0];
 
+// Check if link is expired
+$isExpired = !empty($linkData['expires_at']) && strtotime($linkData['expires_at']) <= time();
+
+if ($isExpired) {
+    // Handle expired link based on expiration behavior
+    switch ($linkData['expiration_behavior']) {
+        case 'redirect':
+            if (!empty($linkData['expired_redirect_url'])) {
+                // Track the expired click
+                $db->execute(
+                    "UPDATE links SET clicks = clicks + 1 WHERE id = ?",
+                    [$linkData['id']]
+                );
+                
+                // Log expired click
+                $db->insert(
+                    "INSERT INTO link_clicks (link_id, ip_address, user_agent, referrer, is_expired) VALUES (?, ?, ?, ?, TRUE)",
+                    [
+                        $linkData['id'],
+                        $_SERVER['REMOTE_ADDR'] ?? '',
+                        $_SERVER['HTTP_USER_AGENT'] ?? '',
+                        $_SERVER['HTTP_REFERER'] ?? ''
+                    ]
+                );
+                
+                // Redirect to expired URL
+                header('Location: ' . $linkData['expired_redirect_url']);
+                exit();
+            }
+            // If no redirect URL, fall through to inactive behavior
+            break;
+            
+        case 'custom_page':
+            // Future feature: show custom expired page
+            // For now, fall through to inactive behavior
+            break;
+            
+        case 'inactive':
+        default:
+            // Link is inactive/expired
+            header('HTTP/1.0 404 Not Found');
+            echo 'This link has expired';
+            exit();
+    }
+}
+
+// Link is active and not expired - proceed with normal redirect
 // Track the click
 $db->execute(
     "UPDATE links SET clicks = clicks + 1 WHERE id = ?",
