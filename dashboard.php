@@ -28,12 +28,21 @@ $userLinks = $db->select(
 );
 
 // Get user's categories
-$userCategories = $db->select(
-    "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
-    [$_SESSION['user_id']]
-);
+$userCategories = [];
+try {
+    $result = $db->select(
+        "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
+        [$_SESSION['user_id']]
+    );
+    if ($result !== false) {
+        $userCategories = $result;
+    }
+} catch (Exception $e) {
+    error_log("Database error loading categories: " . $e->getMessage());
+    $userCategories = [];
+}
 
-// Create default categories if user has none
+// Create default categories if user has none or if database query failed
 if (empty($userCategories)) {
     $defaultCategories = [
         ['name' => 'Social Media', 'description' => 'Links to social media profiles', 'color' => '#1da1f2', 'icon' => 'fab fa-twitter'],
@@ -43,18 +52,28 @@ if (empty($userCategories)) {
         ['name' => 'Other', 'description' => 'Miscellaneous links', 'color' => '#607d8b', 'icon' => 'fas fa-link']
     ];
 
-    foreach ($defaultCategories as $category) {
-        $db->insert(
-            "INSERT INTO categories (user_id, name, description, color, icon) VALUES (?, ?, ?, ?, ?)",
-            [$_SESSION['user_id'], $category['name'], $category['description'], $category['color'], $category['icon']]
-        );
-    }
+    // Try to insert default categories
+    try {
+        foreach ($defaultCategories as $category) {
+            $db->insert(
+                "INSERT INTO categories (user_id, name, description, color, icon) VALUES (?, ?, ?, ?, ?)",
+                [$_SESSION['user_id'], $category['name'], $category['description'], $category['color'], $category['icon']]
+            );
+        }
 
-    // Refresh categories
-    $userCategories = $db->select(
-        "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
-        [$_SESSION['user_id']]
-    );
+        // Refresh categories after insertion
+        $userCategories = $db->select(
+            "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
+            [$_SESSION['user_id']]
+        );
+        if ($userCategories === false) {
+            $userCategories = $defaultCategories; // Use default categories as fallback
+        }
+    } catch (Exception $e) {
+        error_log("Failed to create default categories: " . $e->getMessage());
+        // Use default categories as fallback even if database insertion fails
+        $userCategories = $defaultCategories;
+    }
 }
 
 // Handle form submissions
@@ -1213,6 +1232,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </span>
                         </div>
                         <p class="help has-text-grey-light">Organize your links into categories for better management</p>
+                        <?php if (empty($userCategories)): ?>
+                        <p class="help has-text-warning">
+                            <i class="fas fa-exclamation-triangle"></i> No categories found. Default categories should be created automatically.
+                        </p>
+                        <?php else: ?>
+                        <p class="help has-text-success">
+                            <i class="fas fa-check-circle"></i> <?php echo count($userCategories); ?> categories loaded.
+                        </p>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="field">
