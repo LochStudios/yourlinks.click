@@ -1,0 +1,44 @@
+# YourLinks.click - .gitignore
+
+# Sensitive configuration files
+/webconfig/
+/webconfig/twitch.php
+/webconfig/database.php
+
+# Database files
+*.sql
+database_schema.sql
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Composer
+vendor/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.production

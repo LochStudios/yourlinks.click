@@ -1,9 +1,13 @@
 <?php
 // Database configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'yourlinks_db');
-define('DB_USER', 'yourlinks_user');
-define('DB_PASS', 'your_password_here'); // Change this to your actual password
+// Include sensitive configuration from external file
+require_once '/home/yourlink/webconfig/database.php';
+
+// Define constants from config variables for backward compatibility
+define('DB_HOST', $DB_HOST);
+define('DB_NAME', $DB_NAME);
+define('DB_USER', $DB_USER);
+define('DB_PASS', $DB_PASS);
 
 class Database {
     private static $instance = null;
@@ -58,8 +62,4 @@ class Database {
         return $stmt->rowCount();
     }
 }
-
-// Usage example:
-// $db = Database::getInstance();
-// $users = $db->select("SELECT * FROM users WHERE id = ?", [1]);
 ?>

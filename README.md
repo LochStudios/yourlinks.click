@@ -53,26 +53,39 @@ mysql -u yourlinks_user -p yourlinks_db < database_schema.sql
 
 1. Go to [Twitch Developer Console](https://dev.twitch.tv/console/apps)
 2. Create a new application
-3. Set OAuth Redirect URLs to: `http://yourlinks.click/services/twitch.php`
+3. Set OAuth Redirect URLs to: `https://yourlinks.click/services/twitch.php`
 4. Copy your Client ID and Client Secret
 
-### 4. Configuration
+### 4. Configuration Setup
 
-Update the following files with your credentials:
+Create the configuration directory structure and files:
 
-**services/database.php**:
-```php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'yourlinks_db');
-define('DB_USER', 'yourlinks_user');
-define('DB_PASS', 'your_password_here');
+```bash
+# Create config directory (on your server)
+mkdir -p /home/yourlink/webconfig
+
+# Create config files
+touch /home/yourlink/webconfig/twitch.php
+touch /home/yourlink/webconfig/database.php
 ```
 
-**services/twitch.php**:
+**Update `/home/yourlink/webconfig/database.php`**:
 ```php
-define('TWITCH_CLIENT_ID', 'your_twitch_client_id_here');
-define('TWITCH_CLIENT_SECRET', 'your_twitch_client_secret_here');
-define('TWITCH_REDIRECT_URI', 'http://yourlinks.click/services/twitch.php');
+<?php
+$DB_HOST = 'localhost';
+$DB_NAME = 'yourlinks_db';
+$DB_USER = 'yourlinks_user';
+$DB_PASS = 'your_actual_password_here';
+?>
+```
+
+**Update `/home/yourlink/webconfig/twitch.php`**:
+```php
+<?php
+$CLIENT_ID = 'your_twitch_client_id_here';
+$CLIENT_SECRET = 'your_twitch_client_secret_here';
+$REDIRECT_URI = 'https://yourlinks.click/services/twitch.php';
+?>
 ```
 
 ### 5. Web Server Configuration
@@ -132,31 +145,37 @@ yourlinks.click/
 ├── dashboard.php          # User dashboard with link management
 ├── redirect.php           # Handles subdomain redirects
 ├── .htaccess             # Apache configuration for wildcards
+├── .gitignore            # Git ignore rules for sensitive files
 ├── css/
 │   └── site.css          # Main stylesheet
 ├── services/
 │   ├── database.php      # MySQL database connection class
 │   └── twitch.php        # Twitch OAuth authentication
+├── home/yourlink/webconfig/  # Sensitive configuration files (not in repo)
+│   ├── database.php      # Database credentials
+│   └── twitch.php        # Twitch OAuth credentials
 ├── database_schema.sql   # Database setup script
 └── README.md             # This file
 ```
 
 ## Security Notes
 
-- Change default database passwords
-- Use HTTPS in production
-- Regularly update PHP and dependencies
-- Implement rate limiting for link creation
-- Add CSRF protection for forms (basic implementation included)
+- **Sensitive Configuration**: Database and OAuth credentials are stored in `/home/yourlink/webconfig/` outside the web root for security
+- **File Permissions**: Ensure config files have restricted permissions (600) and are owned by the web server user
+- **HTTPS Only**: Use HTTPS in production to protect OAuth tokens and user data
+- **Database Security**: Use strong passwords and limit database user privileges
+- **Regular Updates**: Keep PHP, MySQL, and dependencies updated
+- **Rate Limiting**: Implement rate limiting for link creation and API calls
+- **CSRF Protection**: The application includes basic CSRF protection for forms
+- **Input Validation**: All user inputs are validated and sanitized
 
-## Development
+## Deployment Checklist
 
-The application uses:
-- PHP with PDO for database interactions
-- Vanilla JavaScript for frontend interactions
-- CSS for styling
-- MySQL for data storage
-
-## License
-
-See LICENSE file for details.
+- [ ] Create `/home/yourlink/webconfig/` directory
+- [ ] Set up database credentials in config files
+- [ ] Configure Twitch OAuth credentials
+- [ ] Set proper file permissions (755 for directories, 644 for files, 600 for config)
+- [ ] Configure wildcard subdomains in cPanel
+- [ ] Set up SSL certificates
+- [ ] Test the application functionality
+- [ ] Verify .gitignore excludes sensitive files
