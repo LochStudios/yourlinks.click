@@ -254,6 +254,38 @@
     border-color: #363636;
 }
 
+/* More aggressive rules to ensure native option text is visible across browsers */
+select,
+.select select,
+.modal .select select {
+    color: #e8eef6 !important; /* light text for select control */
+    background-color: #121212 !important; /* darker control bg */
+    -webkit-text-fill-color: #e8eef6 !important; /* Safari/Chrome */
+}
+
+/* Force option text color and background in native popups where supported */
+select option,
+.select select option,
+.modal .select select option {
+    color: #e8eef6 !important;
+    background-color: #121212 !important;
+}
+
+/* Highlighted/hovered option clarity */
+select option:checked,
+select option:hover,
+.select select option:checked,
+.select select option:hover {
+    color: #ffffff !important;
+    background-color: #1f6feb !important; /* match Bulma primary hover */
+}
+
+/* Edge-case: ensure the select text isn't visually hidden under icons */
+.control.has-icons-left .select select,
+.control.has-icons-left select {
+    padding-left: 2.4rem; /* leave room for the left icon */
+}
+
 /* Style the dropdown arrow and focus states */
 .select select:focus {
     border-color: #3273dc;
