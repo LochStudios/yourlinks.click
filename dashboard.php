@@ -109,6 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma-dark-mode@1.0.4/dist/css/bulma-dark-mode.min.css">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/site.css">
 </head>
@@ -479,7 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $statusClass = $link['is_active'] ? 'has-text-success' : 'has-text-danger';
                         echo '<tr class="link-row" data-link-name="' . htmlspecialchars(strtolower($link['link_name'])) . '" data-title="' . htmlspecialchars(strtolower($link['title'] ?? '')) . '" data-url="' . htmlspecialchars(strtolower($link['original_url'])) . '">';
                         echo '<td>';
-                        echo '<a href="' . htmlspecialchars($fullUrl) . '" target="_blank" class="has-text-link">';
+                        echo '<a href="' . htmlspecialchars($fullUrl) . '" target="_blank" class="has-text-link link-copy" data-url="' . htmlspecialchars($fullUrl) . '">';
                         echo '<i class="fas fa-external-link-alt"></i> ' . htmlspecialchars($link['link_name']);
                         echo '</a>';
                         echo '</td>';
@@ -535,7 +537,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </section>
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Toastify JS -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
+        // Toastify notification functions
+        function showSuccessToast(message) {
+            Toastify({
+                text: message,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "linear-gradient(to right, #48c774, #23d160)",
+                stopOnFocus: true,
+                className: "success-toast"
+            }).showToast();
+        }
+
+        function showErrorToast(message) {
+            Toastify({
+                text: message,
+                duration: 5000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "linear-gradient(to right, #f14668, #ff3860)",
+                stopOnFocus: true,
+                className: "error-toast"
+            }).showToast();
+        }
+
+        function showInfoToast(message) {
+            Toastify({
+                text: message,
+                duration: 4000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "linear-gradient(to right, #209cee, #3273dc)",
+                stopOnFocus: true,
+                className: "info-toast"
+            }).showToast();
+        }
+
+        // Copy to clipboard function
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showSuccessToast('Link copied to clipboard!');
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showSuccessToast('Link copied to clipboard!');
+            }
+        }
+
+        // Show success toast on page load if success message exists
+        <?php if (isset($success)): ?>
+            showSuccessToast("<?php echo addslashes($success); ?>");
+        <?php endif; ?>
+
+        // Show error toast on page load if error message exists
+        <?php if (isset($error)): ?>
+            showErrorToast("<?php echo addslashes($error); ?>");
+        <?php endif; ?>
+
         // Live preview of link URL
         document.getElementById('link_name').addEventListener('input', function() {
             const linkName = this.value.trim();
@@ -620,6 +688,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     color: '#ffffff'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Show loading toast
+                        showInfoToast("Activating link...");
                         document.getElementById('activate-form-' + linkId).submit();
                     }
                 });
@@ -640,6 +710,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     color: '#ffffff'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Show loading toast
+                        showInfoToast("Deactivating link...");
                         document.getElementById('deactivate-form-' + linkId).submit();
                     }
                 });
@@ -660,11 +732,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     color: '#ffffff'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Show loading toast
+                        showInfoToast("Deleting link...");
                         document.getElementById('delete-form-' + linkId).submit();
                     }
                 });
             });
         });
+                    });
+        });
+
+        // Copy link functionality
+        document.querySelectorAll('.link-copy').forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Only copy if Ctrl/Cmd is held (to not interfere with normal clicking)
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const url = this.getAttribute('data-url');
+                    copyToClipboard(url);
+                }
+            });
+        });
+
         // Close notifications
         document.querySelectorAll('.notification .delete').forEach(deleteBtn => {
             deleteBtn.addEventListener('click', function() {
@@ -694,36 +783,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        Swal.fire({
-                            title: 'Domain Verified!',
-                            text: 'Your custom domain has been successfully verified and activated.',
-                            icon: 'success',
-                            background: '#1a1a1a',
-                            color: '#ffffff',
-                            confirmButtonColor: '#48c774'
-                        }).then(() => {
+                        showSuccessToast('Domain verified successfully!');
+                        setTimeout(() => {
                             location.reload(); // Reload to show verified status
-                        });
+                        }, 1500);
                     } else {
-                        Swal.fire({
-                            title: 'Verification Failed',
-                            text: data.message,
-                            icon: 'error',
-                            background: '#1a1a1a',
-                            color: '#ffffff',
-                            confirmButtonColor: '#f14668'
-                        });
+                        showErrorToast(data.message || 'Verification failed');
                     }
                 })
                 .catch(error => {
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'Failed to verify domain. Please try again.',
-                        icon: 'error',
-                        background: '#1a1a1a',
-                        color: '#ffffff',
-                        confirmButtonColor: '#f14668'
-                    });
+                    showErrorToast('Failed to verify domain. Please try again.');
                 })
                 .finally(() => {
                     // Reset button state

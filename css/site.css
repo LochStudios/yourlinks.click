@@ -172,3 +172,80 @@
         color: black !important;
     }
 }
+
+/* Toastify Custom Styles for Dark Theme */
+.toastify {
+    font-family: 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toastify.success-toast {
+    background: linear-gradient(135deg, #48c774 0%, #23d160 100%);
+    color: white;
+}
+
+.toastify.error-toast {
+    background: linear-gradient(135deg, #f14668 0%, #ff3860 100%);
+    color: white;
+}
+
+.toastify.info-toast {
+    background: linear-gradient(135deg, #209cee 0%, #3273dc 100%);
+    color: white;
+}
+
+.toastify .toast-close {
+    color: rgba(255, 255, 255, 0.8);
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.toastify .toast-close:hover {
+    opacity: 1;
+    color: white;
+}
+
+/* Custom animations for toasts */
+.toastify.toastify-enter {
+    animation: toastify-fade-in 0.3s ease-out;
+}
+
+.toastify.toastify-exit {
+    animation: toastify-fade-out 0.3s ease-in;
+}
+
+@keyframes toastify-fade-in {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes toastify-fade-out {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* Mobile responsive adjustments for toasts */
+@media screen and (max-width: 768px) {
+    .toastify {
+        font-size: 13px;
+        max-width: 90vw;
+        margin-right: 1rem;
+    }
+}
