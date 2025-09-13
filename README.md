@@ -8,6 +8,7 @@ A PHP-based link shortening and management service with Twitch OAuth authenticat
 - **Custom Subdomains**: Each user gets their own subdomain (username.yourlinks.click)
 - **Custom Domains**: Users can use their own domains (mydomain.com/link)
 - **Link Management**: Create and manage personalized links through dashboard
+- **Link Editing**: Edit existing links with a beautiful modal interface
 - **Link Categories**: Organize links into custom categories with colors and icons
 - **Link Expiration**: Set expiration dates for links with custom behaviors
 - **Analytics**: Track clicks and performance metrics
@@ -445,3 +446,38 @@ The test page allows you to:
 - Monitor expiration status in real-time
 - Test expired link handling
 - Clean up test data
+
+## Link Editing Feature
+
+The application includes a comprehensive link editing system with a beautiful Bulma modal interface:
+
+### **Edit Modal Features**
+- **Pre-populated Fields**: All current link data is automatically loaded
+- **Real-time Preview**: Live preview of link URLs as you type
+- **Form Validation**: Same validation rules as link creation
+- **Expiration Support**: Full expiration date and behavior editing
+- **Category Management**: Change link categories on the fly
+- **Dark Theme**: Consistent with the overall dark theme design
+
+### **Edit Capabilities**
+- **Link Name**: Change the short link identifier
+- **Destination URL**: Update where the link redirects
+- **Title**: Modify the display name
+- **Category**: Reassign to different categories
+- **Expiration Date**: Set or remove expiration dates
+- **Expiration Behavior**: Change how expired links behave
+- **Redirect URL**: Update custom redirect URLs
+
+### **User Experience**
+- **One-Click Edit**: Click the blue "Edit" button on any link
+- **Modal Interface**: Clean, focused editing experience
+- **Instant Feedback**: Success/error messages with toast notifications
+- **Form Persistence**: Unsaved changes are preserved until submission
+- **Keyboard Navigation**: Full keyboard accessibility support
+
+### **Modal Structure**
+- **Header**: Clear title with close button
+- **Body**: All editable fields with icons and help text
+- **Footer**: Save and Cancel buttons
+- **Background**: Click to close functionality
+- **Responsive**: Works on all screen sizes

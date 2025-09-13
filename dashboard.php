@@ -96,12 +96,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = "Link created successfully!";
             }
         }
-    } elseif (isset($_POST['activate_link']) && isset($_POST['link_id'])) {
-        $db->execute("UPDATE links SET is_active = TRUE WHERE id = ? AND user_id = ?", [$_POST['link_id'], $_SESSION['user_id']]);
-        $success = "Link activated successfully!";
-    } elseif (isset($_POST['deactivate_link']) && isset($_POST['link_id'])) {
-        $db->execute("UPDATE links SET is_active = FALSE WHERE id = ? AND user_id = ?", [$_POST['link_id'], $_SESSION['user_id']]);
-        $success = "Link deactivated successfully!";
+    } elseif (isset($_POST['edit_link'])) {
+        // Edit existing link
+        $linkId = (int)$_POST['edit_link_id'];
+        $linkName = trim($_POST['edit_link_name']);
+        $originalUrl = trim($_POST['edit_original_url']);
+        $title = trim($_POST['edit_title'] ?? '');
+        $categoryId = !empty($_POST['edit_category_id']) ? (int)$_POST['edit_category_id'] : null;
+        $expiresAt = !empty($_POST['edit_expires_at']) ? $_POST['edit_expires_at'] : null;
+        $expirationBehavior = $_POST['edit_expiration_behavior'] ?? 'inactive';
+        $expiredRedirectUrl = trim($_POST['edit_expired_redirect_url'] ?? '');
+        
+        // Validate inputs
+        if (empty($linkName) || empty($originalUrl)) {
+            $error = "Link name and destination URL are required.";
+        } elseif (!filter_var($originalUrl, FILTER_VALIDATE_URL)) {
+            $error = "Please enter a valid URL.";
+        } elseif (!preg_match('/^[a-zA-Z0-9_-]+$/', $linkName)) {
+            $error = "Link name can only contain letters, numbers, hyphens, and underscores.";
+        } elseif ($expiresAt && strtotime($expiresAt) <= time()) {
+            $error = "Expiration date must be in the future.";
+        } elseif ($expirationBehavior === 'redirect' && empty($expiredRedirectUrl)) {
+            $error = "Redirect URL is required when expiration behavior is set to redirect.";
+        } elseif ($expirationBehavior === 'redirect' && !filter_var($expiredRedirectUrl, FILTER_VALIDATE_URL)) {
+            $error = "Please enter a valid redirect URL.";
+        } else {
+            // Check if link name already exists for this user (excluding current link)
+            $existing = $db->select("SELECT id FROM links WHERE user_id = ? AND link_name = ? AND id != ?", [$_SESSION['user_id'], $linkName, $linkId]);
+            if ($existing) {
+                $error = "You already have a link with this name.";
+            } else {
+                // Update the link
+                $db->execute(
+                    "UPDATE links SET link_name = ?, original_url = ?, title = ?, category_id = ?, expires_at = ?, expired_redirect_url = ?, expiration_behavior = ? WHERE id = ? AND user_id = ?",
+                    [$linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expirationBehavior, $linkId, $_SESSION['user_id']]
+                );
+                $success = "Link updated successfully!";
+                
+                // Refresh links data
+                $userLinks = $db->select(
+                    "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
+                     CASE 
+                         WHEN l.expires_at IS NOT NULL AND l.expires_at <= NOW() THEN 'expired'
+                         WHEN l.expires_at IS NOT NULL AND l.expires_at <= DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'expiring_soon'
+                         ELSE 'active'
+                     END as expiration_status
+                     FROM links l
+                     LEFT JOIN categories c ON l.category_id = c.id
+                     WHERE l.user_id = ? ORDER BY l.created_at DESC",
+                    [$_SESSION['user_id']]
+                );
+            }
+        }
     } elseif (isset($_POST['update_custom_domain'])) {
         // Only allow custom domain updates for testing user
         if ($user['login'] === 'gfaundead') {
@@ -853,6 +899,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         echo '<td><span class="tag ' . ($link['is_active'] ? 'is-success' : 'is-danger') . '">' . $status . '</span></td>';
                         echo '<td>';
                         echo '<div class="buttons are-small">';
+                        echo '<button type="button" class="button is-info edit-btn" data-link-id="' . $link['id'] . '" data-link-name="' . htmlspecialchars($link['link_name']) . '" data-original-url="' . htmlspecialchars($link['original_url']) . '" data-title="' . htmlspecialchars($link['title'] ?? '') . '" data-category-id="' . ($link['category_id'] ?? '') . '" data-expires-at="' . htmlspecialchars($link['expires_at'] ?? '') . '" data-expiration-behavior="' . htmlspecialchars($link['expiration_behavior'] ?? 'inactive') . '" data-expired-redirect-url="' . htmlspecialchars($link['expired_redirect_url'] ?? '') . '">';
+                        echo '<span class="icon"><i class="fas fa-edit"></i></span>';
+                        echo '<span>Edit</span>';
+                        echo '</button>';
                         if ($link['is_active']) {
                             echo '<button type="button" class="button is-warning deactivate-btn" data-link-id="' . $link['id'] . '">';
                             echo '<span class="icon"><i class="fas fa-pause"></i></span>';
@@ -893,6 +943,162 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </section>
+
+    <!-- Edit Link Modal -->
+    <div class="modal" id="edit-link-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head has-background-dark">
+                <p class="modal-card-title has-text-light">
+                    <i class="fas fa-edit has-text-primary"></i> Edit Link
+                </p>
+                <button class="delete" aria-label="close" id="edit-modal-close"></button>
+            </header>
+            <section class="modal-card-body has-background-dark-ter">
+                <form method="POST" action="" id="edit-link-form">
+                    <input type="hidden" name="edit_link_id" id="edit_link_id">
+                    
+                    <div class="field">
+                        <label class="label has-text-light" for="edit_link_name">
+                            <i class="fas fa-tag"></i> Link Name
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="edit_link_name" name="edit_link_name" required
+                                   placeholder="e.g., youtube, twitter, discord">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-link"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">
+                            <?php if ($user['login'] === 'gfaundead' && $customDomain && $domainVerified): ?>
+                                Your link will be available at:<br>
+                                <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="edit-preview-name">linkname</span></strong><br>
+                                <strong><?php echo htmlspecialchars($customDomain); ?>/<span id="edit-preview-name-custom">linkname</span></strong>
+                            <?php else: ?>
+                                Your link will be: <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="edit-preview-name">linkname</span></strong>
+                                <?php if ($user['login'] === 'gfaundead' && $customDomain && !$domainVerified): ?>
+                                    <br><em class="has-text-warning">Custom domain available after verification</em>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label has-text-light" for="edit_original_url">
+                            <i class="fas fa-external-link-alt"></i> Destination URL
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="url" id="edit_original_url" name="edit_original_url" required
+                                   placeholder="https://example.com/your-profile">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-globe"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">The URL where visitors will be redirected</p>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label has-text-light" for="edit_title">
+                            <i class="fas fa-heading"></i> Title (Optional)
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="text" id="edit_title" name="edit_title"
+                                   placeholder="Display name for this link">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-i-cursor"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">A friendly name to help you remember this link</p>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label has-text-light" for="edit_category_id">
+                            <i class="fas fa-tag"></i> Category
+                        </label>
+                        <div class="control has-icons-left">
+                            <div class="select is-fullwidth">
+                                <select id="edit_category_id" name="edit_category_id">
+                                    <option value="">No Category</option>
+                                    <?php foreach ($userCategories as $category): ?>
+                                        <option value="<?php echo $category['id']; ?>" 
+                                                data-color="<?php echo htmlspecialchars($category['color']); ?>"
+                                                data-icon="<?php echo htmlspecialchars($category['icon']); ?>">
+                                            <?php echo htmlspecialchars($category['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-tag"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">Organize your links into categories for better management</p>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label has-text-light" for="edit_expires_at">
+                            <i class="fas fa-clock"></i> Expiration Date (Optional)
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="datetime-local" id="edit_expires_at" name="edit_expires_at">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">Set when this link should expire. Leave empty for no expiration.</p>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="label has-text-light" for="edit_expiration_behavior">
+                            <i class="fas fa-exclamation-triangle"></i> When Link Expires
+                        </label>
+                        <div class="control has-icons-left">
+                            <div class="select is-fullwidth">
+                                <select id="edit_expiration_behavior" name="edit_expiration_behavior">
+                                    <option value="inactive">Make link inactive (404 error)</option>
+                                    <option value="redirect">Redirect to custom URL</option>
+                                    <option value="custom_page">Show custom expired page</option>
+                                </select>
+                            </div>
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-toggle-off"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">Choose what happens when the link expires</p>
+                    </div>
+                    
+                    <div class="field" id="edit_expired_redirect_field" style="display: none;">
+                        <label class="label has-text-light" for="edit_expired_redirect_url">
+                            <i class="fas fa-external-link-alt"></i> Expired Redirect URL
+                        </label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="url" id="edit_expired_redirect_url" name="edit_expired_redirect_url"
+                                   placeholder="https://example.com/expired">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-globe"></i>
+                            </span>
+                        </div>
+                        <p class="help has-text-grey-light">URL to redirect visitors when this link expires</p>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot has-background-dark">
+                <button class="button is-primary" type="submit" form="edit-link-form" name="edit_link">
+                    <span class="icon">
+                        <i class="fas fa-save"></i>
+                    </span>
+                    <span>Save Changes</span>
+                </button>
+                <button class="button is-dark" id="edit-modal-cancel">
+                    <span class="icon">
+                        <i class="fas fa-times"></i>
+                    </span>
+                    <span>Cancel</span>
+                </button>
+            </footer>
+        </div>
+    </div>
+
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Toastify JS -->
@@ -993,8 +1199,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
 
-        // Set minimum datetime for expiration
-        document.getElementById('expires_at').addEventListener('focus', function() {
+        // Edit link functionality
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const linkId = this.getAttribute('data-link-id');
+                const linkName = this.getAttribute('data-link-name');
+                const originalUrl = this.getAttribute('data-original-url');
+                const title = this.getAttribute('data-title');
+                const categoryId = this.getAttribute('data-category-id');
+                const expiresAt = this.getAttribute('data-expires-at');
+                const expirationBehavior = this.getAttribute('data-expiration-behavior');
+                const expiredRedirectUrl = this.getAttribute('data-expired-redirect-url');
+                
+                // Populate the edit modal
+                document.getElementById('edit_link_id').value = linkId;
+                document.getElementById('edit_link_name').value = linkName;
+                document.getElementById('edit_original_url').value = originalUrl;
+                document.getElementById('edit_title').value = title;
+                document.getElementById('edit_category_id').value = categoryId;
+                document.getElementById('edit_expires_at').value = expiresAt ? new Date(expiresAt).toISOString().slice(0, 16) : '';
+                document.getElementById('edit_expiration_behavior').value = expirationBehavior;
+                document.getElementById('edit_expired_redirect_url').value = expiredRedirectUrl;
+                
+                // Handle expiration behavior visibility
+                const editExpiredRedirectField = document.getElementById('edit_expired_redirect_field');
+                const editExpiredRedirectInput = document.getElementById('edit_expired_redirect_url');
+                
+                if (expirationBehavior === 'redirect') {
+                    editExpiredRedirectField.style.display = 'block';
+                    editExpiredRedirectInput.required = true;
+                } else {
+                    editExpiredRedirectField.style.display = 'none';
+                    editExpiredRedirectInput.required = false;
+                }
+                
+                // Update preview
+                updateEditPreview(linkName);
+                
+                // Show modal
+                document.getElementById('edit-link-modal').classList.add('is-active');
+            });
+        });
+
+        // Edit modal close handlers
+        document.getElementById('edit-modal-close').addEventListener('click', function() {
+            document.getElementById('edit-link-modal').classList.remove('is-active');
+        });
+        
+        document.getElementById('edit-modal-cancel').addEventListener('click', function() {
+            document.getElementById('edit-link-modal').classList.remove('is-active');
+        });
+        
+        document.querySelector('.modal-background').addEventListener('click', function() {
+            document.getElementById('edit-link-modal').classList.remove('is-active');
+        });
+
+        // Edit form live preview
+        document.getElementById('edit_link_name').addEventListener('input', function() {
+            const linkName = this.value.trim();
+            updateEditPreview(linkName);
+        });
+
+        function updateEditPreview(linkName) {
+            const previewElement = document.getElementById('edit-preview-name');
+            const previewElementCustom = document.getElementById('edit-preview-name-custom');
+            
+            if (linkName) {
+                const cleanName = linkName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '');
+                if (previewElement) previewElement.textContent = cleanName;
+                if (previewElementCustom) previewElementCustom.textContent = cleanName;
+            } else {
+                if (previewElement) previewElement.textContent = 'linkname';
+                if (previewElementCustom) previewElementCustom.textContent = 'linkname';
+            }
+        }
+
+        // Edit expiration behavior dropdown handler
+        document.getElementById('edit_expiration_behavior').addEventListener('change', function() {
+            const editExpiredRedirectField = document.getElementById('edit_expired_redirect_field');
+            const editExpiredRedirectInput = document.getElementById('edit_expired_redirect_url');
+            
+            if (this.value === 'redirect') {
+                editExpiredRedirectField.style.display = 'block';
+                editExpiredRedirectInput.required = true;
+            } else {
+                editExpiredRedirectField.style.display = 'none';
+                editExpiredRedirectInput.required = false;
+                editExpiredRedirectInput.value = '';
+            }
+        });
+
+        // Set minimum datetime for edit expiration
+        document.getElementById('edit_expires_at').addEventListener('focus', function() {
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             this.min = now.toISOString().slice(0, 16);
