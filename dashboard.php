@@ -1116,7 +1116,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 className: "success-toast"
             }).showToast();
         }
-
         function showErrorToast(message) {
             Toastify({
                 text: message,
@@ -1128,7 +1127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 className: "error-toast"
             }).showToast();
         }
-
         function showInfoToast(message) {
             Toastify({
                 text: message,
@@ -1140,7 +1138,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 className: "info-toast"
             }).showToast();
         }
-
         // Copy to clipboard function
         async function copyToClipboard(text) {
             try {
@@ -1157,17 +1154,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 showSuccessToast('Link copied to clipboard!');
             }
         }
-
         // Show success toast on page load if success message exists
         <?php if (isset($success)): ?>
             showSuccessToast("<?php echo addslashes($success); ?>");
         <?php endif; ?>
-
         // Show error toast on page load if error message exists
         <?php if (isset($error)): ?>
             showErrorToast("<?php echo addslashes($error); ?>");
         <?php endif; ?>
-
         // Live preview of link URL
         document.getElementById('link_name').addEventListener('input', function() {
             const linkName = this.value.trim();
@@ -1183,12 +1177,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (previewElementCustom) previewElementCustom.textContent = 'linkname';
             }
         });
-
         // Expiration behavior dropdown handler
         document.getElementById('expiration_behavior').addEventListener('change', function() {
             const expiredRedirectField = document.getElementById('expired_redirect_field');
             const expiredRedirectInput = document.getElementById('expired_redirect_url');
-            
             if (this.value === 'redirect') {
                 expiredRedirectField.style.display = 'block';
                 expiredRedirectInput.required = true;
@@ -1198,7 +1190,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 expiredRedirectInput.value = '';
             }
         });
-
         // Edit link functionality
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -1210,7 +1201,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const expiresAt = this.getAttribute('data-expires-at');
                 const expirationBehavior = this.getAttribute('data-expiration-behavior');
                 const expiredRedirectUrl = this.getAttribute('data-expired-redirect-url');
-                
                 // Populate the edit modal
                 document.getElementById('edit_link_id').value = linkId;
                 document.getElementById('edit_link_name').value = linkName;
@@ -1220,11 +1210,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 document.getElementById('edit_expires_at').value = expiresAt ? new Date(expiresAt).toISOString().slice(0, 16) : '';
                 document.getElementById('edit_expiration_behavior').value = expirationBehavior;
                 document.getElementById('edit_expired_redirect_url').value = expiredRedirectUrl;
-                
                 // Handle expiration behavior visibility
                 const editExpiredRedirectField = document.getElementById('edit_expired_redirect_field');
                 const editExpiredRedirectInput = document.getElementById('edit_expired_redirect_url');
-                
                 if (expirationBehavior === 'redirect') {
                     editExpiredRedirectField.style.display = 'block';
                     editExpiredRedirectInput.required = true;
@@ -1232,34 +1220,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     editExpiredRedirectField.style.display = 'none';
                     editExpiredRedirectInput.required = false;
                 }
-                
                 // Update preview
                 updateEditPreview(linkName);
-                
                 // Show modal
                 document.getElementById('edit-link-modal').classList.add('is-active');
             });
         });
-
         // Edit modal close handlers
         document.getElementById('edit-modal-close').addEventListener('click', function() {
             document.getElementById('edit-link-modal').classList.remove('is-active');
         });
-        
         document.getElementById('edit-modal-cancel').addEventListener('click', function() {
             document.getElementById('edit-link-modal').classList.remove('is-active');
         });
-        
-        document.querySelector('.modal-background').addEventListener('click', function() {
+        document.getElementById('edit-link-modal').querySelector('.modal-background').addEventListener('click', function() {
             document.getElementById('edit-link-modal').classList.remove('is-active');
         });
-
         // Edit form live preview
         document.getElementById('edit_link_name').addEventListener('input', function() {
             const linkName = this.value.trim();
             updateEditPreview(linkName);
         });
-
         function updateEditPreview(linkName) {
             const previewElement = document.getElementById('edit-preview-name');
             const previewElementCustom = document.getElementById('edit-preview-name-custom');
@@ -1273,12 +1254,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (previewElementCustom) previewElementCustom.textContent = 'linkname';
             }
         }
-
         // Edit expiration behavior dropdown handler
         document.getElementById('edit_expiration_behavior').addEventListener('change', function() {
             const editExpiredRedirectField = document.getElementById('edit_expired_redirect_field');
             const editExpiredRedirectInput = document.getElementById('edit_expired_redirect_url');
-            
             if (this.value === 'redirect') {
                 editExpiredRedirectField.style.display = 'block';
                 editExpiredRedirectInput.required = true;
@@ -1288,14 +1267,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 editExpiredRedirectInput.value = '';
             }
         });
-
         // Set minimum datetime for edit expiration
         document.getElementById('edit_expires_at').addEventListener('focus', function() {
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             this.min = now.toISOString().slice(0, 16);
         });
-
         // Search functionality for links table
         const searchInput = document.getElementById('link-search');
         if (searchInput) {
@@ -1418,9 +1395,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
-                    });
-        });
-
         // Copy link functionality
         document.querySelectorAll('.link-copy').forEach(link => {
             link.addEventListener('click', function(e) {
@@ -1432,13 +1406,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             });
         });
-
         // Category delete functionality
         document.querySelectorAll('.delete-category-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const categoryId = this.getAttribute('data-category-id');
                 const categoryName = this.getAttribute('data-category-name');
-
                 Swal.fire({
                     title: 'Delete Category?',
                     text: `Are you sure you want to delete "${categoryName}"? This action cannot be undone.`,
@@ -1458,25 +1430,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
-
         // Close notifications
         document.querySelectorAll('.notification .delete').forEach(deleteBtn => {
             deleteBtn.addEventListener('click', function() {
                 this.parentNode.style.display = 'none';
             });
         });
-
         // Domain verification
         const verifyBtn = document.getElementById('verify-domain-btn');
         if (verifyBtn) {
             verifyBtn.addEventListener('click', function() {
                 const domain = this.getAttribute('data-domain');
                 const token = this.getAttribute('data-token');
-
                 // Show loading state
                 this.classList.add('is-loading');
                 this.disabled = true;
-
                 // Make verification request
                 fetch('/services/verify_domain.php', {
                     method: 'POST',
