@@ -271,9 +271,8 @@
     color: #ffffff;
 }
 
-/* Hide scroll bar on modals */
 .modal {
-    overflow: hidden;
+    overflow: visible;
 }
 
 .modal-card-body {
