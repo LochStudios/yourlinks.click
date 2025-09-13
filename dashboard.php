@@ -244,9 +244,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <!-- Links Table -->
             <div class="box has-background-dark-ter has-text-light">
-                <h2 class="title is-4 has-text-primary">
-                    <i class="fas fa-list has-text-primary"></i> Your Links
-                </h2>
+                <div class="level">
+                    <div class="level-left">
+                        <h2 class="title is-4 has-text-primary">
+                            <i class="fas fa-list has-text-primary"></i> Your Links
+                        </h2>
+                    </div>
+                    <div class="level-right">
+                        <?php if (count($userLinks) > 10): ?>
+                        <div class="field">
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" id="link-search" placeholder="Search links...">
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
                 <?php
                 $userLinks = $db->select(
                     "SELECT * FROM links WHERE user_id = ? ORDER BY created_at DESC",
@@ -258,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo '</div>';
                 } else {
                     echo '<div class="table-container">';
-                    echo '<table class="table is-fullwidth is-hoverable is-striped">';
+                    echo '<table class="table is-fullwidth is-hoverable is-striped" id="links-table">';
                     echo '<thead>';
                     echo '<tr>';
                     echo '<th><i class="fas fa-tag"></i> Link Name</th>';
@@ -274,7 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $fullUrl = 'https://' . $user['login'] . '.yourlinks.click/' . $link['link_name'];
                         $status = $link['is_active'] ? 'Active' : 'Inactive';
                         $statusClass = $link['is_active'] ? 'has-text-success' : 'has-text-danger';
-                        echo '<tr>';
+                        echo '<tr class="link-row" data-link-name="' . htmlspecialchars(strtolower($link['link_name'])) . '" data-title="' . htmlspecialchars(strtolower($link['title'] ?? '')) . '" data-url="' . htmlspecialchars(strtolower($link['original_url'])) . '">';
                         echo '<td>';
                         echo '<a href="' . htmlspecialchars($fullUrl) . '" target="_blank" class="has-text-link">';
                         echo '<i class="fas fa-external-link-alt"></i> ' . htmlspecialchars($link['link_name']);
@@ -343,6 +359,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 previewElement.textContent = 'linkname';
             }
         });
+        // Search functionality for links table
+        const searchInput = document.getElementById('link-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                const tableRows = document.querySelectorAll('#links-table tbody .link-row');
+                const tableContainer = document.querySelector('.table-container');
+                let visibleCount = 0;
+                tableRows.forEach(row => {
+                    const linkName = row.getAttribute('data-link-name') || '';
+                    const title = row.getAttribute('data-title') || '';
+                    const url = row.getAttribute('data-url') || '';
+                    const matches = linkName.includes(searchTerm) ||
+                                  title.includes(searchTerm) ||
+                                  url.includes(searchTerm);
+                    if (matches || searchTerm === '') {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                // Show/hide "no results" message
+                let noResultsMsg = document.getElementById('no-search-results');
+                if (searchTerm !== '' && visibleCount === 0) {
+                    if (!noResultsMsg) {
+                        noResultsMsg = document.createElement('div');
+                        noResultsMsg.id = 'no-search-results';
+                        noResultsMsg.className = 'notification is-warning is-dark';
+                        noResultsMsg.innerHTML = '<i class="fas fa-search"></i> No links found matching your search.';
+                        tableContainer.appendChild(noResultsMsg);
+                    }
+                    noResultsMsg.style.display = '';
+                } else if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
+            });
+            // Add search input styling and focus effects
+            searchInput.addEventListener('focus', function() {
+                this.parentElement.classList.add('is-focused');
+            });
+            searchInput.addEventListener('blur', function() {
+                this.parentElement.classList.remove('is-focused');
+            });
+            // Clear search on escape key
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    this.dispatchEvent(new Event('input'));
+                    this.blur();
+                }
+            });
+        }
         // SweetAlert2 for actions
         document.querySelectorAll('.activate-btn').forEach(btn => {
             btn.addEventListener('click', function() {
