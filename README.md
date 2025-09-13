@@ -135,11 +135,98 @@ For the subdomain system to work, you need to set up wildcard subdomains in cPan
    - Users can add their own domains in the dashboard
    - Domain ownership is verified via DNS TXT records
    - SSL certificates are automatically managed for custom domains
+   - **Domain Configuration**: Users must point their domain to your server
 
-Ensure the web server can write to necessary directories (if any):
-```bash
-chmod 755 /path/to/yourlinks.click
+### Hosting Requirements
+
+This service can be deployed on shared hosting (cPanel) or VPS. The application handles both wildcard subdomains and custom domains through DNS configuration.
+
+#### **Shared Hosting (cPanel)**
+- ✅ **Wildcard subdomains**: `*.yourlinks.click` routing
+- ✅ **Custom domains**: Via DNS pointing (no addon domains required)
+- ✅ **SSL certificates**: Provided by hosting provider
+- ✅ **Database**: MySQL included with hosting
+
+#### **VPS Hosting**
+- ✅ **Full server control**: Custom configurations
+- ✅ **Higher performance**: For increased traffic
+- ✅ **Custom software**: Advanced server setups
+
+### Custom Domain Setup
+
+Users can configure custom domains by updating DNS records at their registrar:
+
+#### **Required DNS Records**
 ```
+Type: A
+Name: @ (or yourdomain.com)
+Value: [server-ip-address]
+TTL: 300
+
+Type: TXT
+Name: _yourlinks_verification.yourdomain.com
+Value: [verification-token-from-dashboard]
+TTL: 300
+```
+
+#### **Setup Process**
+1. **Access domain registrar** (GoDaddy, Namecheap, etc.)
+2. **Navigate to DNS settings** for the domain
+3. **Add A record**: Point domain to server IP address
+4. **Add TXT record**: For domain ownership verification
+5. **Wait for DNS propagation** (5-30 minutes)
+6. **Verify domain** through the dashboard
+7. **Use custom domain** for links
+
+#### **Domain Verification**
+- **Automated verification**: System checks DNS TXT records
+- **SSL provisioning**: Verified domains receive SSL certificates
+- **Security**: Prevents unauthorized domain usage
+
+### Server Configuration
+
+Configure your hosting environment for optimal performance:
+
+#### **Wildcard Subdomain Setup**
+- **Create wildcard subdomain**: `*.yourlinks.click`
+- **Document root**: Point to `public_html` directory
+- **Purpose**: Enables `user.yourlinks.click` URLs
+
+#### **SSL Certificate**
+- **Install wildcard SSL**: For `*.yourlinks.click`
+- **Provider**: Usually provided by hosting company
+- **Coverage**: Includes custom domains
+
+#### **PHP Configuration**
+- **Version**: PHP 8.1 or higher recommended
+- **Extensions**: Enable PDO, MySQLi, cURL
+- **Settings**: Ensure `allow_url_fopen` is enabled
+
+#### **Database Setup**
+- **Create database**: MySQL database for the service
+- **Import schema**: Use provided `database.sql` file
+- **User permissions**: Grant necessary privileges
+
+### API Endpoints
+
+#### Domain Verification
+```
+GET /services/verify_domain.php?domain=example.com&token=verification_token
+```
+- **Purpose**: Verifies domain ownership via DNS TXT records
+- **Parameters**: 
+  - `domain`: The domain to verify
+  - `token`: Verification token from user's dashboard
+- **Response**: JSON with verification status
+
+### Server Requirements
+
+The server must be configured to handle custom domains:
+
+1. **Wildcard SSL**: SSL certificate covering `*.yourlinks.click`
+2. **Apache Configuration**: `.htaccess` handles domain routing
+3. **PHP Settings**: `allow_url_fopen` enabled for DNS verification
+4. **File Permissions**: Proper permissions for web server access
 
 ### 7. Access the Application
 
@@ -175,8 +262,9 @@ yourlinks.click/
 │   └── site.css          # Main stylesheet
 ├── services/
 │   ├── database.php      # MySQL database connection class
-│   └── twitch.php        # Twitch OAuth authentication
-├── home/yourlink/webconfig/  # Sensitive configuration files (not in repo)
+│   ├── twitch.php        # Twitch OAuth authentication
+│   └── verify_domain.php # Domain verification service
+├── config/               # Configuration files (not in repo)
 │   ├── database.php      # Database credentials
 │   └── twitch.php        # Twitch OAuth credentials
 └── README.md             # This file
@@ -196,22 +284,22 @@ The application uses:
 
 ## Security Notes
 
-- **Sensitive Configuration**: Database and OAuth credentials are stored in `/home/yourlink/webconfig/` outside the web root for security
-- **File Permissions**: Ensure config files have restricted permissions (600) and are owned by the web server user
+- **Sensitive Configuration**: Database and OAuth credentials stored outside web root
+- **File Permissions**: Restrict config file permissions (600)
 - **HTTPS Only**: Use HTTPS in production to protect OAuth tokens and user data
 - **Database Security**: Use strong passwords and limit database user privileges
 - **Regular Updates**: Keep PHP, MySQL, and dependencies updated
 - **Rate Limiting**: Implement rate limiting for link creation and API calls
-- **CSRF Protection**: The application includes basic CSRF protection for forms
+- **CSRF Protection**: Basic CSRF protection for forms
 - **Input Validation**: All user inputs are validated and sanitized
 
 ## Deployment Checklist
 
-- [ ] Create `/home/yourlink/webconfig/` directory
+- [ ] Create configuration directory outside web root
 - [ ] Set up database credentials in config files
 - [ ] Configure Twitch OAuth credentials
 - [ ] Set proper file permissions (755 for directories, 644 for files, 600 for config)
-- [ ] Configure wildcard subdomains in cPanel
+- [ ] Configure wildcard subdomains
 - [ ] Set up SSL certificates
 - [ ] Test the application functionality
 - [ ] Verify .gitignore excludes sensitive files

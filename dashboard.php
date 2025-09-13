@@ -207,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <span><?php echo $customDomain ? 'Update Domain' : 'Add Custom Domain'; ?></span>
                             </button>
                             <?php if ($customDomain && !$domainVerified): ?>
-                                <button type="submit" name="verify_domain" class="button is-info ml-2">
+                                <button type="button" class="button is-info ml-2" id="verify-domain-btn" data-domain="<?php echo htmlspecialchars($customDomain); ?>" data-token="<?php echo htmlspecialchars($verificationToken); ?>">
                                     <span class="icon">
                                         <i class="fas fa-shield-alt"></i>
                                     </span>
@@ -254,12 +254,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     
                     <p class="mt-3">
-                        <strong>Instructions:</strong><br>
+                        <strong>Domain Setup Instructions:</strong><br>
+                        <strong>Option 1 - Addon Domain (Easiest):</strong><br>
+                        1. Login to your domain's cPanel<br>
+                        2. Go to <code>Domains → Addon Domains</code><br>
+                        3. Add <strong><?php echo htmlspecialchars($customDomain); ?></strong> as addon domain<br>
+                        4. Point DNS A record to: <code>110.232.143.81</code><br>
+                        5. Return here and click "Verify Domain"<br><br>
+                        <strong>Option 2 - DNS Pointing:</strong><br>
                         1. Go to your domain registrar's DNS settings<br>
-                        2. Add the TXT record above<br>
-                        3. Wait 5-10 minutes for DNS propagation<br>
-                        4. Click "Verify Domain" button above<br>
-                        5. Your custom domain will be activated!
+                        2. Add A record: <code>@</code> → <code>110.232.143.81</code> (server IP)<br>
+                        3. Add the TXT record below<br>
+                        4. Wait 5-30 minutes for DNS propagation<br>
+                        5. Return here and click "Verify Domain"<br><br>
+                        <strong>💡 Note:</strong> SSL certificates are automatically managed for verified custom domains.
                     </p>
                     
                     <div class="content mt-3">
@@ -661,6 +669,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 this.parentNode.style.display = 'none';
             });
         });
+
+        // Domain verification
+        const verifyBtn = document.getElementById('verify-domain-btn');
+        if (verifyBtn) {
+            verifyBtn.addEventListener('click', function() {
+                const domain = this.getAttribute('data-domain');
+                const token = this.getAttribute('data-token');
+
+                // Show loading state
+                this.classList.add('is-loading');
+                this.disabled = true;
+
+                // Make verification request
+                fetch('/services/verify_domain.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `domain=${encodeURIComponent(domain)}&token=${encodeURIComponent(token)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Domain Verified!',
+                            text: 'Your custom domain has been successfully verified and activated.',
+                            icon: 'success',
+                            background: '#1a1a1a',
+                            color: '#ffffff',
+                            confirmButtonColor: '#48c774'
+                        }).then(() => {
+                            location.reload(); // Reload to show verified status
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Verification Failed',
+                            text: data.message,
+                            icon: 'error',
+                            background: '#1a1a1a',
+                            color: '#ffffff',
+                            confirmButtonColor: '#f14668'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Failed to verify domain. Please try again.',
+                        icon: 'error',
+                        background: '#1a1a1a',
+                        color: '#ffffff',
+                        confirmButtonColor: '#f14668'
+                    });
+                })
+                .finally(() => {
+                    // Reset button state
+                    this.classList.remove('is-loading');
+                    this.disabled = false;
+                });
+            });
+        }
     </script>
 </body>
 </html>
