@@ -4,27 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YourLinks.click - Link Management Service</title>
+
+    <!-- Bulma CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/site.css">
 </head>
-<body class="home-page">
-    <div class="container">
-        <h1>Welcome to YourLinks.click</h1>
-        <div class="description">
-            <p>YourLinks.click is a powerful link management service that helps you organize, track, and optimize your links. Whether you're a content creator, marketer, or just someone who wants to keep their links tidy, we've got you covered.</p>
-            
-            <h2>Features:</h2>
-            <ul>
-                <li>Create short, memorable links</li>
-                <li>Track click analytics and performance</li>
-                <li>Organize links into categories</li>
-                <li>Custom link expiration dates</li>
-                <li>Secure authentication via Twitch</li>
-            </ul>
-            
-            <p>Get started by logging in with your Twitch account to access your personalized dashboard.</p>
+<body>
+    <section class="hero is-primary is-fullheight">
+        <div class="hero-body">
+            <div class="container has-text-centered">
+                <div class="columns is-centered">
+                    <div class="column is-8">
+                        <h1 class="title is-1 has-text-white">
+                            <i class="fas fa-link"></i> Welcome to YourLinks.click
+                        </h1>
+
+                        <div class="box has-background-white-ter">
+                            <h2 class="subtitle is-4 has-text-grey-dark">
+                                A powerful link management service that helps you organize, track, and optimize your links.
+                            </h2>
+
+                            <div class="content has-text-left">
+                                <h3 class="title is-4 has-text-grey-dark">
+                                    <i class="fas fa-star"></i> Features:
+                                </h3>
+                                <div class="columns is-multiline">
+                                    <div class="column is-6">
+                                        <div class="box has-background-light">
+                                            <i class="fas fa-magic has-text-primary"></i>
+                                            <strong>Create short, memorable links</strong>
+                                        </div>
+                                    </div>
+                                    <div class="column is-6">
+                                        <div class="box has-background-light">
+                                            <i class="fas fa-chart-line has-text-info"></i>
+                                            <strong>Track click analytics and performance</strong>
+                                        </div>
+                                    </div>
+                                    <div class="column is-6">
+                                        <div class="box has-background-light">
+                                            <i class="fas fa-folder has-text-warning"></i>
+                                            <strong>Organize links into categories</strong>
+                                        </div>
+                                    </div>
+                                    <div class="column is-6">
+                                        <div class="box has-background-light">
+                                            <i class="fas fa-clock has-text-danger"></i>
+                                            <strong>Custom link expiration dates</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="box has-background-info-light">
+                                    <i class="fas fa-shield-alt has-text-info"></i>
+                                    <strong>Secure authentication via Twitch</strong>
+                                </div>
+                            </div>
+
+                            <p class="has-text-grey">
+                                Get started by logging in with your Twitch account to access your personalized dashboard.
+                            </p>
+
+                            <div class="buttons is-centered mt-5">
+                                <a href="/services/twitch.php?login=true" class="button is-large is-primary">
+                                    <span class="icon">
+                                        <i class="fab fa-twitch"></i>
+                                    </span>
+                                    <span>Login with Twitch</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <a href="/services/twitch.php?login=true" class="login-btn">Login with Twitch</a>
-    </div>
+    </section>
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>
