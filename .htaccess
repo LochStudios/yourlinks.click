@@ -38,11 +38,3 @@ RewriteRule ^(.*)$ index.php [L,QSA]
     Order Allow,Deny
     Deny from all
 </Files>
-
-# PHP settings for better performance
-<IfModule mod_php.c>
-    php_value upload_max_filesize 10M
-    php_value post_max_size 10M
-    php_value max_execution_time 30
-    php_value memory_limit 128M
-</IfModule>
