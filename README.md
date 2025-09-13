@@ -154,7 +154,6 @@ yourlinks.click/
 ├── home/yourlink/webconfig/  # Sensitive configuration files (not in repo)
 │   ├── database.php      # Database credentials
 │   └── twitch.php        # Twitch OAuth credentials
-├── database_schema.sql   # Database setup script
 └── README.md             # This file
 ```
 
