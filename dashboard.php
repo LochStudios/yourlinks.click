@@ -54,45 +54,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->execute("UPDATE links SET is_active = FALSE WHERE id = ? AND user_id = ?", [$_POST['link_id'], $_SESSION['user_id']]);
         $success = "Link deactivated successfully!";
     } elseif (isset($_POST['update_custom_domain'])) {
-        $customDomain = trim($_POST['custom_domain']);
-        $domainError = null;
-        
-        if (!empty($customDomain)) {
-            // Validate domain format
-            if (!preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $customDomain)) {
-                $domainError = "Please enter a valid domain name.";
-            } elseif (substr($customDomain, 0, 4) === 'www.') {
-                $domainError = "Please enter the domain without 'www.' (e.g., example.com).";
-            } else {
-                // Check if domain is already used by another user
-                $existingDomain = $db->select("SELECT id FROM users WHERE custom_domain = ? AND id != ?", [$customDomain, $_SESSION['user_id']]);
-                if ($existingDomain) {
-                    $domainError = "This domain is already in use by another user.";
+        // Only allow custom domain updates for testing user
+        if ($user['login'] === 'gfaundead') {
+            $customDomain = trim($_POST['custom_domain']);
+            $domainError = null;
+            
+            if (!empty($customDomain)) {
+                // Validate domain format
+                if (!preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $customDomain)) {
+                    $domainError = "Please enter a valid domain name.";
+                } elseif (substr($customDomain, 0, 4) === 'www.') {
+                    $domainError = "Please enter the domain without 'www.' (e.g., example.com).";
+                } else {
+                    // Check if domain is already used by another user
+                    $existingDomain = $db->select("SELECT id FROM users WHERE custom_domain = ? AND id != ?", [$customDomain, $_SESSION['user_id']]);
+                    if ($existingDomain) {
+                        $domainError = "This domain is already in use by another user.";
+                    }
                 }
             }
-        }
-        
-        if (!$domainError) {
-            $db->execute(
-                "UPDATE users SET custom_domain = ?, domain_verified = FALSE WHERE id = ?",
-                [$customDomain ?: null, $_SESSION['user_id']]
-            );
-            $success = empty($customDomain) ? "Custom domain removed successfully!" : "Custom domain updated! Please verify ownership.";
+            
+            if (!$domainError) {
+                $db->execute(
+                    "UPDATE users SET custom_domain = ?, domain_verified = FALSE WHERE id = ?",
+                    [$customDomain ?: null, $_SESSION['user_id']]
+                );
+                $success = empty($customDomain) ? "Custom domain removed successfully!" : "Custom domain updated! Please verify ownership.";
+            } else {
+                $error = $domainError;
+            }
         } else {
-            $error = $domainError;
+            $error = "Custom domains are currently in development.";
         }
     } elseif (isset($_POST['verify_domain'])) {
-        // Generate verification token
-        $verificationToken = bin2hex(random_bytes(16));
-        $db->execute(
-            "UPDATE users SET domain_verification_token = ? WHERE id = ?",
-            [$verificationToken, $_SESSION['user_id']]
-        );
-        
-        // Get user's custom domain
-        $userData = $db->select("SELECT custom_domain FROM users WHERE id = ?", [$_SESSION['user_id']]);
-        if ($userData && $userData[0]['custom_domain']) {
-            $success = "Verification instructions sent! Add this TXT record to your DNS: " . $verificationToken;
+        // Only allow domain verification for testing user
+        if ($user['login'] === 'gfaundead') {
+            // Generate verification token
+            $verificationToken = bin2hex(random_bytes(16));
+            $db->execute(
+                "UPDATE users SET domain_verification_token = ? WHERE id = ?",
+                [$verificationToken, $_SESSION['user_id']]
+            );
+            
+            // Get user's custom domain
+            $userData = $db->select("SELECT custom_domain FROM users WHERE id = ?", [$_SESSION['user_id']]);
+            if ($userData && $userData[0]['custom_domain']) {
+                $success = "Verification instructions sent! Add this TXT record to your DNS: " . $verificationToken;
+            }
+        } else {
+            $error = "Custom domains are currently in development.";
         }
     }
 }
@@ -163,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
             <!-- Custom Domain Section -->
+            <?php if ($user['login'] === 'gfaundead'): ?>
             <div class="box has-background-dark-ter has-text-light mt-5">
                 <h2 class="title is-4 has-text-primary">
                     <i class="fas fa-globe has-text-primary"></i> Custom Domain
@@ -300,6 +311,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <?php endif; ?>
             </div>
+            <?php else: ?>
+            <!-- Feature Coming Soon Section -->
+            <div class="box has-background-dark-ter has-text-light mt-5">
+                <h2 class="title is-4 has-text-primary">
+                    <i class="fas fa-globe has-text-primary"></i> Custom Domain
+                </h2>
+                <div class="notification is-info is-dark">
+                    <h4 class="title is-5 has-text-info">
+                        <i class="fas fa-clock"></i> Feature Coming Soon
+                    </h4>
+                    <p>Custom domains are currently in development and testing. This feature will allow you to use your own domain (like yourdomain.com/link) instead of the subdomain format.</p>
+                    <p class="mt-3">
+                        <strong>Expected features:</strong>
+                    </p>
+                    <ul class="mt-2">
+                        <li>• Use your own domain for links</li>
+                        <li>• Automatic SSL certificate management</li>
+                        <li>• DNS verification for security</li>
+                        <li>• Multiple domains per account</li>
+                    </ul>
+                    <p class="mt-3 has-text-grey">
+                        <em>This feature is being tested internally and will be available to all users soon!</em>
+                    </p>
+                </div>
+            </div>
+            <?php endif; ?>
             <!-- Success/Error Messages -->
             <?php if (isset($success)): ?>
                 <div class="notification is-success is-dark">
@@ -385,13 +422,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </span>
                         </div>
                         <p class="help">
-                            <?php if ($customDomain && $domainVerified): ?>
+                            <?php if ($user['login'] === 'gfaundead' && $customDomain && $domainVerified): ?>
                                 Your link will be available at:<br>
                                 <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></strong><br>
                                 <strong><?php echo htmlspecialchars($customDomain); ?>/<span id="preview-name-custom">linkname</span></strong>
                             <?php else: ?>
                                 Your link will be: <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click/<span id="preview-name">linkname</span></strong>
-                                <?php if ($customDomain && !$domainVerified): ?>
+                                <?php if ($user['login'] === 'gfaundead' && $customDomain && !$domainVerified): ?>
                                     <br><em class="has-text-warning">Custom domain available after verification</em>
                                 <?php endif; ?>
                             <?php endif; ?>
