@@ -126,18 +126,37 @@
     color: #e0e0e0;
 }
 
-/* Custom input styling for dark mode */
-.input {
+/* Custom select styling for dark mode */
+.select select {
     background-color: #1a1a1a;
     border-color: #4a4a4a;
     color: #e0e0e0;
 }
 
-.input::placeholder {
+.select select option {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    padding: 8px;
+}
+
+/* Ensure select dropdown options are visible */
+.select select:focus {
+    border-color: #3273dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
+}
+
+/* Custom textarea styling for dark mode */
+.textarea {
+    background-color: #1a1a1a;
+    border-color: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.textarea::placeholder {
     color: #7a7a7a;
 }
 
-.input:focus {
+.textarea:focus {
     border-color: #3273dc;
     box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
 }
