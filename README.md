@@ -8,6 +8,7 @@ A PHP-based link shortening and management service with Twitch OAuth authenticat
 - **Custom Subdomains**: Each user gets their own subdomain (username.yourlinks.click)
 - **Custom Domains**: Users can use their own domains (mydomain.com/link)
 - **Link Management**: Create and manage personalized links through dashboard
+- **Link Categories**: Organize links into custom categories with colors and icons
 - **Analytics**: Track clicks and performance metrics
 - **User Dashboard**: Manage your links in a clean interface
 - **MySQL Database**: Robust data storage with proper relationships
@@ -314,3 +315,61 @@ source custom_domain_migration.sql;
 ```
 
 This adds the necessary columns for custom domain functionality.
+
+### Categories Feature Migration
+
+To add the link categories feature to an existing installation:
+
+```sql
+-- Run this SQL to add categories support
+source database_categories_migration.sql;
+```
+
+This creates the categories table and adds the category_id column to the links table.
+
+## Link Categories Feature
+
+The application includes a comprehensive link categorization system:
+
+### **Category Management**
+- **Create Categories**: Users can create custom categories with names, descriptions, colors, and icons
+- **Default Categories**: System automatically creates starter categories:
+  - Social Media (Twitter icon, blue)
+  - Gaming (Gamepad icon, purple)
+  - Music (Music icon, pink)
+  - Videos (YouTube icon, red)
+  - Other (Link icon, grey)
+- **Visual Design**: Each category has a custom color and FontAwesome icon
+- **Category Cards**: Categories are displayed as cards showing link count and management options
+
+### **Link Organization**
+- **Category Assignment**: When creating links, users can select from their categories
+- **Visual Tags**: Links display category tags with custom colors and icons in the table
+- **Search Integration**: Search functionality includes category names
+- **No Category Option**: Links can exist without a category assignment
+
+### **Category Operations**
+- **Create**: Add new categories with custom styling
+- **Read**: View all categories with link counts
+- **Update**: Modify category properties (planned feature)
+- **Delete**: Remove categories (with protection for categories containing links)
+
+### **Database Schema**
+```sql
+-- Categories table
+CREATE TABLE categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    color VARCHAR(7) DEFAULT '#3273dc',
+    icon VARCHAR(50) DEFAULT 'fas fa-tag',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Links table extension
+ALTER TABLE links ADD COLUMN category_id INT NULL;
+ALTER TABLE links ADD CONSTRAINT fk_links_category_id
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;
+```

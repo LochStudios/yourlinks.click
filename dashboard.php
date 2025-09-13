@@ -15,9 +15,42 @@ $user = $_SESSION['twitch_user'];
 
 // Get user's links for search functionality
 $userLinks = $db->select(
-    "SELECT * FROM links WHERE user_id = ? ORDER BY created_at DESC",
+    "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon
+     FROM links l
+     LEFT JOIN categories c ON l.category_id = c.id
+     WHERE l.user_id = ? ORDER BY l.created_at DESC",
     [$_SESSION['user_id']]
 );
+
+// Get user's categories
+$userCategories = $db->select(
+    "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
+    [$_SESSION['user_id']]
+);
+
+// Create default categories if user has none
+if (empty($userCategories)) {
+    $defaultCategories = [
+        ['name' => 'Social Media', 'description' => 'Links to social media profiles', 'color' => '#1da1f2', 'icon' => 'fab fa-twitter'],
+        ['name' => 'Gaming', 'description' => 'Gaming related links', 'color' => '#6441a5', 'icon' => 'fas fa-gamepad'],
+        ['name' => 'Music', 'description' => 'Music and audio links', 'color' => '#e91e63', 'icon' => 'fas fa-music'],
+        ['name' => 'Videos', 'description' => 'Video content links', 'color' => '#ff0000', 'icon' => 'fab fa-youtube'],
+        ['name' => 'Other', 'description' => 'Miscellaneous links', 'color' => '#607d8b', 'icon' => 'fas fa-link']
+    ];
+
+    foreach ($defaultCategories as $category) {
+        $db->insert(
+            "INSERT INTO categories (user_id, name, description, color, icon) VALUES (?, ?, ?, ?, ?)",
+            [$_SESSION['user_id'], $category['name'], $category['description'], $category['color'], $category['icon']]
+        );
+    }
+
+    // Refresh categories
+    $userCategories = $db->select(
+        "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
+        [$_SESSION['user_id']]
+    );
+}
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -26,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $linkName = trim($_POST['link_name']);
         $originalUrl = trim($_POST['original_url']);
         $title = trim($_POST['title'] ?? '');
+        $categoryId = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null;
         // Validate inputs
         if (empty($linkName) || empty($originalUrl)) {
             $error = "Link name and destination URL are required.";
@@ -41,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Create the link
                 $db->insert(
-                    "INSERT INTO links (user_id, link_name, original_url, title) VALUES (?, ?, ?, ?)",
-                    [$_SESSION['user_id'], $linkName, $originalUrl, $title]
+                    "INSERT INTO links (user_id, link_name, original_url, title, category_id) VALUES (?, ?, ?, ?, ?)",
+                    [$_SESSION['user_id'], $linkName, $originalUrl, $title, $categoryId]
                 );
                 $success = "Link created successfully!";
             }
@@ -86,7 +120,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Custom domains are currently in development.";
         }
-    } elseif (isset($_POST['verify_domain'])) {
+    } elseif (isset($_POST['create_category'])) {
+        $categoryName = trim($_POST['category_name']);
+        $categoryDescription = trim($_POST['category_description'] ?? '');
+        $categoryColor = trim($_POST['category_color'] ?? '#3273dc');
+        $categoryIcon = trim($_POST['category_icon'] ?? 'fas fa-tag');
+
+        if (empty($categoryName)) {
+            $error = "Category name is required.";
+        } else {
+            // Check if category name already exists for this user
+            $existing = $db->select("SELECT id FROM categories WHERE user_id = ? AND name = ?", [$_SESSION['user_id'], $categoryName]);
+            if ($existing) {
+                $error = "You already have a category with this name.";
+            } else {
+                $db->insert(
+                    "INSERT INTO categories (user_id, name, description, color, icon) VALUES (?, ?, ?, ?, ?)",
+                    [$_SESSION['user_id'], $categoryName, $categoryDescription, $categoryColor, $categoryIcon]
+                );
+                $success = "Category created successfully!";
+                // Refresh categories
+                $userCategories = $db->select(
+                    "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
+                    [$_SESSION['user_id']]
+                );
+            }
+        }
+    } elseif (isset($_POST['delete_category']) && isset($_POST['category_id'])) {
+        $categoryId = (int)$_POST['category_id'];
+
+        // Check if category has links
+        $linksInCategory = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND category_id = ?", [$_SESSION['user_id'], $categoryId]);
+        if ($linksInCategory[0]['count'] > 0) {
+            $error = "Cannot delete category that contains links. Please move or delete the links first.";
+        } else {
+            $db->execute("DELETE FROM categories WHERE id = ? AND user_id = ?", [$categoryId, $_SESSION['user_id']]);
+            $success = "Category deleted successfully!";
+            // Refresh categories
+            $userCategories = $db->select(
+                "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
+                [$_SESSION['user_id']]
+            );
+        }
         // Only allow domain verification for testing user
         if ($user['login'] === 'gfaundead') {
             // Generate verification token
@@ -337,6 +412,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
             <?php endif; ?>
+            <!-- Category Management Section -->
+            <div class="box has-background-dark-ter has-text-light mt-5">
+                <h2 class="title is-4 has-text-primary">
+                    <i class="fas fa-tags has-text-primary"></i> Link Categories
+                </h2>
+                <p class="subtitle is-6 has-text-grey-light mb-4">
+                    Organize your links into categories for better management
+                </p>
+
+                <!-- Create New Category -->
+                <div class="box has-background-dark-ter">
+                    <h3 class="title is-5 has-text-light">
+                        <i class="fas fa-plus-circle"></i> Create New Category
+                    </h3>
+                    <form method="POST" action="">
+                        <div class="columns">
+                            <div class="column is-4">
+                                <div class="field">
+                                    <label class="label">Category Name</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="text" name="category_name" required
+                                               placeholder="e.g., Social Media">
+                                        <span class="icon is-small is-left">
+                                            <i class="fas fa-tag"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column is-4">
+                                <div class="field">
+                                    <label class="label">Description (Optional)</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="category_description"
+                                               placeholder="Brief description">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column is-2">
+                                <div class="field">
+                                    <label class="label">Color</label>
+                                    <div class="control">
+                                        <input class="input" type="color" name="category_color" value="#3273dc">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column is-2">
+                                <div class="field">
+                                    <label class="label">&nbsp;</label>
+                                    <div class="control">
+                                        <button type="submit" name="create_category" class="button is-primary is-fullwidth">
+                                            <span class="icon">
+                                                <i class="fas fa-plus"></i>
+                                            </span>
+                                            <span>Create</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Existing Categories -->
+                <?php if (!empty($userCategories)): ?>
+                <div class="box has-background-dark-ter">
+                    <h3 class="title is-5 has-text-light">
+                        <i class="fas fa-list"></i> Your Categories
+                    </h3>
+                    <div class="columns is-multiline">
+                        <?php foreach ($userCategories as $category): ?>
+                        <div class="column is-6-tablet is-4-desktop">
+                            <div class="card has-background-dark-ter has-text-light" style="border-left: 4px solid <?php echo htmlspecialchars($category['color']); ?>">
+                                <div class="card-content">
+                                    <div class="media">
+                                        <div class="media-left">
+                                            <span class="icon has-text-primary">
+                                                <i class="<?php echo htmlspecialchars($category['icon']); ?>"></i>
+                                            </span>
+                                        </div>
+                                        <div class="media-content">
+                                            <p class="title is-6 has-text-light">
+                                                <?php echo htmlspecialchars($category['name']); ?>
+                                            </p>
+                                            <?php if (!empty($category['description'])): ?>
+                                            <p class="subtitle is-7 has-text-grey-light">
+                                                <?php echo htmlspecialchars($category['description']); ?>
+                                            </p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div class="content">
+                                        <?php
+                                        $linkCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND category_id = ?", [$_SESSION['user_id'], $category['id']]);
+                                        ?>
+                                        <span class="tag is-info is-light">
+                                            <?php echo $linkCount[0]['count']; ?> links
+                                        </span>
+                                        <div class="buttons are-small mt-2">
+                                            <button type="button" class="button is-danger is-small delete-category-btn"
+                                                    data-category-id="<?php echo $category['id']; ?>"
+                                                    data-category-name="<?php echo htmlspecialchars($category['name']); ?>">
+                                                <span class="icon">
+                                                    <i class="fas fa-trash"></i>
+                                                </span>
+                                            </button>
+                                        </div>
+                                        <!-- Hidden delete form -->
+                                        <form method="POST" action="" class="is-hidden" id="delete-category-form-<?php echo $category['id']; ?>">
+                                            <input type="hidden" name="category_id" value="<?php echo $category['id']; ?>">
+                                            <input type="hidden" name="delete_category" value="1">
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
             <!-- Success/Error Messages -->
             <?php if (isset($success)): ?>
                 <div class="notification is-success is-dark">
@@ -461,6 +656,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <p class="help">A friendly name to help you remember this link</p>
                     </div>
                     <div class="field">
+                        <label class="label" for="category_id">
+                            <i class="fas fa-tag"></i> Category
+                        </label>
+                        <div class="control has-icons-left">
+                            <div class="select is-fullwidth">
+                                <select id="category_id" name="category_id">
+                                    <option value="">No Category</option>
+                                    <?php foreach ($userCategories as $category): ?>
+                                        <option value="<?php echo $category['id']; ?>" 
+                                                data-color="<?php echo htmlspecialchars($category['color']); ?>"
+                                                data-icon="<?php echo htmlspecialchars($category['icon']); ?>">
+                                            <?php echo htmlspecialchars($category['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-tag"></i>
+                            </span>
+                        </div>
+                        <p class="help">Organize your links into categories for better management</p>
+                    </div>
+                    <div class="field">
                         <div class="control">
                             <button type="submit" name="create_link" class="button is-primary is-medium">
                                 <span class="icon">
@@ -506,6 +724,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo '<th><i class="fas fa-tag"></i> Link Name</th>';
                     echo '<th><i class="fas fa-external-link-alt"></i> Destination</th>';
                     echo '<th><i class="fas fa-heading"></i> Title</th>';
+                    echo '<th><i class="fas fa-folder"></i> Category</th>';
                     echo '<th><i class="fas fa-mouse-pointer"></i> Clicks</th>';
                     echo '<th><i class="fas fa-toggle-on"></i> Status</th>';
                     echo '<th><i class="fas fa-cogs"></i> Actions</th>';
@@ -516,7 +735,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $fullUrl = 'https://' . $user['login'] . '.yourlinks.click/' . $link['link_name'];
                         $status = $link['is_active'] ? 'Active' : 'Inactive';
                         $statusClass = $link['is_active'] ? 'has-text-success' : 'has-text-danger';
-                        echo '<tr class="link-row" data-link-name="' . htmlspecialchars(strtolower($link['link_name'])) . '" data-title="' . htmlspecialchars(strtolower($link['title'] ?? '')) . '" data-url="' . htmlspecialchars(strtolower($link['original_url'])) . '">';
+                        echo '<tr class="link-row" data-link-name="' . htmlspecialchars(strtolower($link['link_name'])) . '" data-title="' . htmlspecialchars(strtolower($link['title'] ?? '')) . '" data-url="' . htmlspecialchars(strtolower($link['original_url'])) . '" data-category="' . htmlspecialchars(strtolower($link['category_name'] ?? '')) . '">';
                         echo '<td>';
                         echo '<a href="' . htmlspecialchars($fullUrl) . '" target="_blank" class="has-text-link link-copy" data-url="' . htmlspecialchars($fullUrl) . '">';
                         echo '<i class="fas fa-external-link-alt"></i> ' . htmlspecialchars($link['link_name']);
@@ -528,6 +747,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         echo '</a>';
                         echo '</td>';
                         echo '<td>' . htmlspecialchars($link['title'] ?? '') . '</td>';
+                        echo '<td>';
+                        if (!empty($link['category_name'])) {
+                            echo '<span class="tag" style="background-color: ' . htmlspecialchars($link['category_color']) . '; color: white;">';
+                            echo '<span class="icon is-small mr-1">';
+                            echo '<i class="' . htmlspecialchars($link['category_icon']) . '"></i>';
+                            echo '</span>';
+                            echo htmlspecialchars($link['category_name']);
+                            echo '</span>';
+                        } else {
+                            echo '<span class="tag is-grey is-light">No Category</span>';
+                        }
+                        echo '</td>';
                         echo '<td><span class="tag is-info is-light">' . $link['clicks'] . '</span></td>';
                         echo '<td><span class="tag ' . ($link['is_active'] ? 'is-success' : 'is-danger') . '">' . $status . '</span></td>';
                         echo '<td>';
@@ -668,9 +899,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const linkName = row.getAttribute('data-link-name') || '';
                     const title = row.getAttribute('data-title') || '';
                     const url = row.getAttribute('data-url') || '';
+                    const category = row.getAttribute('data-category') || '';
                     const matches = linkName.includes(searchTerm) ||
                                   title.includes(searchTerm) ||
-                                  url.includes(searchTerm);
+                                  url.includes(searchTerm) ||
+                                  category.includes(searchTerm);
                     if (matches || searchTerm === '') {
                         row.style.display = '';
                         visibleCount++;
@@ -788,6 +1021,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const url = this.getAttribute('data-url');
                     copyToClipboard(url);
                 }
+            });
+        });
+
+        // Category delete functionality
+        document.querySelectorAll('.delete-category-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const categoryId = this.getAttribute('data-category-id');
+                const categoryName = this.getAttribute('data-category-name');
+
+                Swal.fire({
+                    title: 'Delete Category?',
+                    text: `Are you sure you want to delete "${categoryName}"? This action cannot be undone.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f14668',
+                    cancelButtonColor: '#363636',
+                    confirmButtonText: 'Yes, delete it!',
+                    background: '#1a1a1a',
+                    color: '#ffffff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading toast
+                        showInfoToast("Deleting category...");
+                        document.getElementById('delete-category-form-' + categoryId).submit();
+                    }
+                });
             });
         });
 
