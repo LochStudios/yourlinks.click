@@ -1,0 +1,48 @@
+# YourLinks.click - Apache Configuration for Wildcard Subdomains
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Handle wildcard subdomains
+# Route username.yourlinks.click/linkname to redirect.php
+RewriteCond %{HTTP_HOST} ^([a-zA-Z0-9-]+)\.yourlinks\.click$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ redirect.php [L,QSA]
+
+# Handle www.yourlinks.click
+RewriteCond %{HTTP_HOST} ^www\.yourlinks\.click$ [NC]
+RewriteRule ^(.*)$ http://yourlinks.click/$1 [R=301,L]
+
+# Handle main domain requests
+RewriteCond %{HTTP_HOST} ^yourlinks\.click$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L,QSA]
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Prevent access to sensitive files
+<Files "database_schema.sql">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files "*.log">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# PHP settings for better performance
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 30
+    php_value memory_limit 128M
+</IfModule>
