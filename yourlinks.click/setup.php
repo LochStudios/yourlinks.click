@@ -2,7 +2,36 @@
 // Setup script for YourLinks.click
 // This script creates the database and tables if they don't exist
 
-// Include database connection (this will create the database if needed)
+// Include config to get credentials
+if (file_exists('/var/www/config/database.php')) {
+    require_once '/var/www/config/database.php';
+} else {
+    die("Database config file not found. Please create /var/www/config/database.php with your database credentials.\n");
+}
+
+// First, connect to MySQL server without specifying a database
+$servername = $db_servername;
+$username = $db_username;
+$password = $db_password;
+
+$conn = new mysqli($servername, $username, $password);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error . "\n");
+}
+
+// Create database if it doesn't exist
+$sql = "CREATE DATABASE IF NOT EXISTS yourlinks CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+if ($conn->query($sql) === TRUE) {
+    echo "Database 'yourlinks' created or already exists.\n";
+} else {
+    die("Error creating database: " . $conn->error . "\n");
+}
+
+// Close connection and reconnect to the specific database
+$conn->close();
+
+// Now include the normal database connection
 require_once 'services/database.php';
 
 $db = Database::getInstance();
