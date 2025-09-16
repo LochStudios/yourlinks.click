@@ -1,2 +1,27 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# YourLinks.click - Git Attributes
+# Ensures proper handling of files on different platforms and GitHub language detection
+
+# PHP files
+*.php text eol=lf linguist-language=PHP
+
+# SQL files
+*.sql text eol=lf linguist-language=SQL
+
+# Markdown files
+*.md text eol=lf linguist-language=Markdown
+
+# CSS files
+*.css text eol=lf linguist-language=CSS
+
+# Apache config
+.htaccess text eol=lf
+
+# Git files
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Documentation
+LICENSE text eol=lf
+
+# Ensure line endings are LF for consistency
+* text=auto eol=lf
