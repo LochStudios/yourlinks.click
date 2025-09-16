@@ -1,10 +1,7 @@
 # YourLinks.click - Apache Configuration for Wildcard Subdomains
 
 # Enable rewrite engine
-RewriteEngine On
-
-# Log errors to error.log in the same directory
-ErrorLog error.log
+RewriteEngine Onx
 
 # Force HTTPS for all requests
 RewriteCond %{HTTPS} off
