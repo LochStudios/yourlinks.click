@@ -5,10 +5,6 @@
 /webconfig/twitch.php
 /webconfig/database.php
 
-# Database files
-*.sql
-database_schema.sql
-
 # Logs
 *.log
 logs/
