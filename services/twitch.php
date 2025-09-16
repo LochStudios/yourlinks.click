@@ -3,12 +3,12 @@ session_start();
 
 // Twitch OAuth Configuration
 // Include sensitive configuration from external file
-require_once '/home/yourlink/webconfig/twitch.php';
+require_once '/var/www/config/twitch.php';
 
 // Define constants from config variables for backward compatibility
-define('TWITCH_CLIENT_ID', $CLIENT_ID);
-define('TWITCH_CLIENT_SECRET', $CLIENT_SECRET);
-define('TWITCH_REDIRECT_URI', $REDIRECT_URI);
+define('TWITCH_CLIENT_ID', $twitch_client_id);
+define('TWITCH_CLIENT_SECRET', $twitch_client_secret);
+define('TWITCH_REDIRECT_URI', $twitch_redirect_uri);
 
 // Include database connection
 require_once 'database.php';

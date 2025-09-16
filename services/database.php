@@ -1,13 +1,13 @@
 <?php
 // Database configuration
 // Include sensitive configuration from external file
-require_once '/home/yourlink/webconfig/database.php';
+require_once '/var/www/config/database.php';
 
 // Define constants from config variables for backward compatibility
-define('DB_HOST', $DB_HOST);
-define('DB_NAME', $DB_NAME);
-define('DB_USER', $DB_USER);
-define('DB_PASS', $DB_PASS);
+define('DB_HOST', $db_servername);
+define('DB_NAME', 'yourlinks');
+define('DB_USER', $db_username);
+define('DB_PASS', $db_password);
 
 class Database {
     private static $instance = null;

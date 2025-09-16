@@ -68,29 +68,28 @@ Create the configuration directory structure and files:
 
 ```bash
 # Create config directory (on your server)
-mkdir -p /home/yourlink/webconfig
+mkdir -p /var/www/config
 
 # Create config files
-touch /home/yourlink/webconfig/twitch.php
-touch /home/yourlink/webconfig/database.php
+touch /var/www/config/twitch.php
+touch /var/www/config/database.php
 ```
 
-**Update `/home/yourlink/webconfig/database.php`**:
+**Update `/var/www/config/database.php`**:
 ```php
 <?php
-$DB_HOST = 'localhost';
-$DB_NAME = 'yourlinks_db';
-$DB_USER = 'yourlinks_user';
-$DB_PASS = 'your_actual_password_here';
+$db_servername = 'localhost';
+$db_username = 'yourlinks_user';
+$db_password = 'your_actual_password_here';
 ?>
 ```
 
-**Update `/home/yourlink/webconfig/twitch.php`**:
+**Update `/var/www/config/twitch.php`**:
 ```php
 <?php
-$CLIENT_ID = 'your_twitch_client_id_here';
-$CLIENT_SECRET = 'your_twitch_client_secret_here';
-$REDIRECT_URI = 'https://yourlinks.click/services/twitch.php';
+$twitch_client_id = 'your_twitch_client_id_here';
+$twitch_client_secret = 'your_twitch_client_secret_here';
+$twitch_redirect_uri = 'https://yourlinks.click/services/twitch.php';
 ?>
 ```
 
