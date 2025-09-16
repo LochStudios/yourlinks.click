@@ -3,13 +3,13 @@
 -- Run this script to create the complete database structure
 
 -- Create database (uncomment if needed)
--- CREATE DATABASE IF NOT EXISTS yourlinks CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE yourlinks;
+CREATE DATABASE IF NOT EXISTS yourlinks CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE yourlinks;
 
 -- ===========================================
 -- USERS TABLE
 -- ===========================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     twitch_id VARCHAR(50) NOT NULL UNIQUE,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -20,7 +20,6 @@ CREATE TABLE users (
     domain_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
     INDEX idx_twitch_id (twitch_id),
     INDEX idx_username (username),
     INDEX idx_custom_domain (custom_domain),
@@ -30,7 +29,7 @@ CREATE TABLE users (
 -- ===========================================
 -- CATEGORIES TABLE
 -- ===========================================
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -38,7 +37,6 @@ CREATE TABLE categories (
     color VARCHAR(7) DEFAULT '#3273dc',
     icon VARCHAR(50) DEFAULT 'fas fa-tag',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
     INDEX idx_name (name),
@@ -48,7 +46,7 @@ CREATE TABLE categories (
 -- ===========================================
 -- LINKS TABLE
 -- ===========================================
-CREATE TABLE links (
+CREATE TABLE IF NOT EXISTS links (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     link_name VARCHAR(100) NOT NULL,
@@ -67,7 +65,6 @@ CREATE TABLE links (
     is_active BOOLEAN DEFAULT TRUE,
     clicks INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
     INDEX idx_user_id (user_id),
@@ -81,7 +78,7 @@ CREATE TABLE links (
 -- ===========================================
 -- LINK CLICKS TABLE
 -- ===========================================
-CREATE TABLE link_clicks (
+CREATE TABLE IF NOT EXISTS link_clicks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     link_id INT NOT NULL,
     ip_address VARCHAR(45),
@@ -90,7 +87,6 @@ CREATE TABLE link_clicks (
     is_expired BOOLEAN DEFAULT FALSE,
     is_deactivated BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (link_id) REFERENCES links(id) ON DELETE CASCADE,
     INDEX idx_link_id (link_id),
     INDEX idx_created_at (created_at),
