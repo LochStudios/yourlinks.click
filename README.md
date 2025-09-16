@@ -37,7 +37,7 @@ A PHP-based link shortening and management service with Twitch OAuth authenticat
 
 - PHP 7.4 or higher
 - MySQL 5.7 or higher
-- Web server (Apache/Nginx) with URL rewriting enabled
+- Web server (Apache2 preferred, Nginx alternative) with URL rewriting enabled
 - Composer (optional, for dependency management)
 
 ### 2. Database Setup
@@ -95,9 +95,9 @@ $twitch_redirect_uri = 'https://yourlinks.click/services/twitch.php';
 
 ### 5. Web Server Configuration
 
-Make sure your web server serves PHP files and has URL rewriting enabled.
+This guide uses **Apache2** as the default web server. Make sure your web server serves PHP files and has URL rewriting enabled.
 
-**Apache (.htaccess)**:
+**Apache2 (.htaccess)** - Default Configuration:
 ```apache
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -105,54 +105,105 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . index.php [L]
 ```
 
-**Nginx**:
+**Nginx** - Alternative Configuration:
 ```nginx
 location / {
     try_files $uri $uri/ /index.php?$query_string;
 }
 ```
 
-### 6. cPanel Wildcard Subdomain Setup
+### 6. VPS Wildcard Subdomain Setup
 
-For the subdomain system to work, you need to set up wildcard subdomains in cPanel:
+For the subdomain system to work on your VPS, you need to configure wildcard subdomains at the server level:
 
-1. **Create Wildcard Subdomain**:
-   - Go to cPanel → Subdomains
-   - Create a subdomain: `*.yourlinks.click`
-   - Point it to the same document root as your main domain
-
-2. **DNS Configuration**:
-   - Add a wildcard DNS record: `*.yourlinks.click A [your-server-IP]`
+1. **DNS Configuration** (at your domain registrar):
+   - Add a wildcard DNS record: `*.yourlinks.click A [your-VPS-IP]`
    - Or CNAME record: `*.yourlinks.click CNAME yourlinks.click`
 
-3. **Apache Configuration** (if needed)**:
-   - The included `.htaccess` file handles wildcard routing
-   - Make sure `mod_rewrite` is enabled
+2. **Web Server Configuration** (Apache2 - Default):
 
-4. **SSL Certificate**:
-   - Get a wildcard SSL certificate for `*.yourlinks.click`
-   - Or use Let's Encrypt with DNS challenge for wildcard certificates
+   **Apache2** (create/edit `/etc/apache2/sites-available/yourlinks.click.conf`):
+   ```apache
+   <VirtualHost *:80>
+       ServerName yourlinks.click
+       ServerAlias *.yourlinks.click
+       DocumentRoot /var/www/html/yourlinks.click
+       
+       <Directory /var/www/html/yourlinks.click>
+           AllowOverride All
+           Require all granted
+       </Directory>
+   </VirtualHost>
+   ```
+
+   **Nginx** (Alternative - create/edit `/etc/nginx/sites-available/yourlinks.click`):
+   ```nginx
+   server {
+       listen 80;
+       server_name yourlinks.click *.yourlinks.click;
+       root /var/www/html/yourlinks.click;
+       index index.php;
+       
+       location / {
+           try_files $uri $uri/ /index.php?$query_string;
+       }
+       
+       location ~ \.php$ {
+           include snippets/fastcgi-php.conf;
+           fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+       }
+   }
+   ```
+
+3. **SSL Certificate** (Let's Encrypt - Apache2 Default):
+   ```bash
+   # Install certbot for Apache2 (default)
+   sudo apt install certbot python3-certbot-apache
+   
+   # Alternative: Install certbot for Nginx
+   # sudo apt install certbot python3-certbot-nginx
+   
+   # Get wildcard certificate (requires DNS challenge)
+   sudo certbot certonly --manual --preferred-challenges dns -d yourlinks.click -d *.yourlinks.click
+   ```
+
+4. **Enable Site and Restart Services** (Apache2 Default):
+   ```bash
+   # Apache2 (default)
+   sudo a2ensite yourlinks.click
+   sudo systemctl reload apache2
+   
+   # Alternative: Nginx
+   # sudo ln -s /etc/nginx/sites-available/yourlinks.click /etc/nginx/sites-enabled/
+   # sudo systemctl reload nginx
+   ```
+   ```
 
 5. **Custom Domain Setup** (Optional):
    - Users can add their own domains in the dashboard
    - Domain ownership is verified via DNS TXT records
    - SSL certificates are automatically managed for custom domains
-   - **Domain Configuration**: Users must point their domain to your server
+   - **Domain Configuration**: Users must point their domain to your VPS IP
 
 ### Hosting Requirements
 
-This service can be deployed on shared hosting (cPanel) or VPS. The application handles both wildcard subdomains and custom domains through DNS configuration.
+**⚠️ IMPORTANT: This service now requires VPS hosting only. cPanel shared hosting is no longer supported due to compatibility changes.**
 
-#### **Shared Hosting (cPanel)**
-- ✅ **Wildcard subdomains**: `*.yourlinks.click` routing
-- ✅ **Custom domains**: Via DNS pointing (no addon domains required)
-- ✅ **SSL certificates**: Provided by hosting provider
-- ✅ **Database**: MySQL included with hosting
+This service is designed for VPS hosting with full server control. The application handles wildcard subdomains and custom domains through DNS configuration and requires direct server access for configuration.
 
-#### **VPS Hosting**
-- ✅ **Full server control**: Custom configurations
-- ✅ **Higher performance**: For increased traffic
-- ✅ **Custom software**: Advanced server setups
+#### **VPS Hosting (Required)**
+- ✅ **Full server control**: Custom configurations and software installation
+- ✅ **Wildcard subdomains**: `*.yourlinks.click` routing via DNS
+- ✅ **Custom domains**: Via DNS pointing to your server
+- ✅ **SSL certificates**: Let's Encrypt or custom certificates
+- ✅ **Database**: MySQL/MariaDB server administration
+- ✅ **Web server**: Apache/Nginx configuration
+- ✅ **Higher performance**: Optimized for increased traffic
+
+#### **cPanel Shared Hosting (Not Supported)**
+- ❌ **No longer compatible**: Due to cPanel's recent changes, this service cannot run on shared hosting
+- ❌ **Limited server access**: Cannot install required software or configure server properly
+- ❌ **MySQLi restrictions**: Shared hosting environments have limitations with MySQLi extensions
 
 ### Custom Domain Setup
 
@@ -187,27 +238,29 @@ TTL: 300
 
 ### Server Configuration
 
-Configure your hosting environment for optimal performance:
+Configure your VPS environment for optimal performance:
 
-#### **Wildcard Subdomain Setup**
-- **Create wildcard subdomain**: `*.yourlinks.click`
-- **Document root**: Point to `public_html` directory
+#### **Web Server Setup** (Apache2 Default)
+- **Document root**: `/var/www/html/yourlinks.click` (or your preferred directory)
+- **Wildcard routing**: Configured via Apache2 virtual host (Nginx alternative available)
 - **Purpose**: Enables `user.yourlinks.click` URLs
 
 #### **SSL Certificate**
-- **Install wildcard SSL**: For `*.yourlinks.click`
-- **Provider**: Usually provided by hosting company
+- **Install wildcard SSL**: For `*.yourlinks.click` using Let's Encrypt
+- **Auto-renewal**: Configure certbot for automatic certificate renewal
 - **Coverage**: Includes custom domains
 
 #### **PHP Configuration**
 - **Version**: PHP 8.1 or higher recommended
-- **Extensions**: Enable PDO, MySQLi, cURL
+- **Extensions**: Enable MySQLi, cURL, mbstring, json
 - **Settings**: Ensure `allow_url_fopen` is enabled
+- **FPM**: Configure PHP-FPM for better performance
 
 #### **Database Setup**
+- **Install MySQL/MariaDB**: `sudo apt install mysql-server`
 - **Create database**: MySQL database for the service
-- **Import schema**: Use provided `database.sql` file
-- **User permissions**: Grant necessary privileges
+- **Import schema**: Use provided database schema file
+- **User permissions**: Grant necessary privileges to application user
 
 ### API Endpoints
 
@@ -226,7 +279,7 @@ GET /services/verify_domain.php?domain=example.com&token=verification_token
 The server must be configured to handle custom domains:
 
 1. **Wildcard SSL**: SSL certificate covering `*.yourlinks.click`
-2. **Apache Configuration**: `.htaccess` handles domain routing
+2. **Web Server Configuration**: Apache2 virtual host with `.htaccess` for domain routing (Nginx alternative available)
 3. **PHP Settings**: `allow_url_fopen` enabled for DNS verification
 4. **File Permissions**: Proper permissions for web server access
 
@@ -275,7 +328,7 @@ yourlinks.click/
 ## Development
 
 The application uses:
-- **Backend**: PHP with PDO for database interactions
+- **Backend**: PHP with MySQLi for database interactions
 - **Frontend**:
   - [Bulma CSS 1.0.4](https://bulma.io/) - Modern CSS framework with dark mode support
   - [Font Awesome 6.4.0](https://fontawesome.com/) - Icon library
