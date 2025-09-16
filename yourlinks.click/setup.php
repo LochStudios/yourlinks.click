@@ -57,10 +57,16 @@ foreach ($statements as $statement) {
         continue;
     }
 
+    // Skip CREATE DATABASE statement since we already created it
+    if (preg_match('/CREATE DATABASE/i', $statement)) {
+        continue;
+    }
+
     // Execute the statement
     if ($conn->query($statement) === TRUE) {
-        if (preg_match('/CREATE TABLE/i', $statement) || preg_match('/CREATE DATABASE/i', $statement)) {
+        if (preg_match('/CREATE TABLE/i', $statement)) {
             $createdTables++;
+            echo "Created table: " . preg_replace('/CREATE TABLE (IF NOT EXISTS )?(\w+).*/i', '$2', $statement) . "\n";
         }
     } else {
         $errors[] = "Error executing: " . $statement . "\nError: " . $conn->error;
