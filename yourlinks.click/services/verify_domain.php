@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 // Domain verification endpoint for YourLinks.click
 // This script verifies domain ownership by checking DNS TXT records
 
