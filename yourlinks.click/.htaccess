@@ -3,6 +3,9 @@
 # Enable rewrite engine
 RewriteEngine On
 
+# Log errors to error.log in the same directory
+ErrorLog error.log
+
 # Force HTTPS for all requests
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
