@@ -3,7 +3,7 @@ session_start();
 
 // Twitch OAuth Configuration
 // Include sensitive configuration from external file
-require_once '/var/www/config/twitch.php';
+require_once '/var/www/config/yourlinksclick.php';
 
 // Define constants from config variables for backward compatibility
 define('TWITCH_CLIENT_ID', $twitch_client_id);
