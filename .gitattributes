@@ -22,6 +22,8 @@
 
 # Documentation
 LICENSE text eol=lf
+README  text eol=lf
+CONFIG_TEMPLATES text eol=lf
 
 # Ensure line endings are LF for consistency
 * text=auto eol=lf
