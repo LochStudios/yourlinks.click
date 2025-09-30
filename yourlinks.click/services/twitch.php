@@ -94,6 +94,28 @@ class TwitchAuth {
         return json_decode($result, true);
     }
 
+    // Validate access token with Twitch
+    public function validateToken($accessToken) {
+        $url = 'https://id.twitch.tv/oauth2/validate';
+        $options = array(
+            'http' => array(
+                'header' => "Authorization: OAuth " . $accessToken . "\r\n",
+                'method' => 'GET'
+            )
+        );
+        $context = stream_context_create($options);
+        $result = file_get_contents($url, false, $context);
+        if ($result === FALSE) {
+            return false;
+        }
+        $response = json_decode($result, true);
+        // Check if the response indicates a valid token (status 200 with user data)
+        if (isset($response['client_id']) && isset($response['user_id'])) {
+            return $response;
+        }
+        return false;
+    }
+
     // Save or update user in database
     public function saveUser($userData) {
         $db = Database::getInstance();
@@ -169,6 +191,7 @@ if (isset($_GET['login'])) {
     // Store user session
     $_SESSION['user_id'] = $userId;
     $_SESSION['twitch_user'] = $user;
+    $_SESSION['access_token'] = $tokenData['access_token'];
 
     // Redirect to dashboard or home
     header('Location: /dashboard.php'); // You'll need to create this
@@ -176,7 +199,7 @@ if (isset($_GET['login'])) {
 } elseif (isset($_GET['logout'])) {
     // Handle logout
     session_destroy();
-    header('Location: /');
+    header('Location: https://yourlinks.click/services/twitch.php?login=true');
     exit();
 } else {
     // Invalid request

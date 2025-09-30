@@ -7,7 +7,28 @@ session_start();
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /');
+    header('Location: https://yourlinks.click/services/twitch.php?login=true');
+    exit();
+}
+
+// Include Twitch service for token validation
+require_once 'services/twitch.php';
+
+// Validate Twitch access token
+if (!isset($_SESSION['access_token'])) {
+    // No token stored, redirect to login
+    session_destroy();
+    header('Location: https://yourlinks.click/services/twitch.php?login=true');
+    exit();
+}
+
+$twitch = new TwitchAuth();
+$tokenValidation = $twitch->validateToken($_SESSION['access_token']);
+
+if (!$tokenValidation || $tokenValidation['user_id'] !== $_SESSION['twitch_user']['id']) {
+    // Token is invalid or doesn't match the user, destroy session and redirect to login
+    session_destroy();
+    header('Location: https://yourlinks.click/services/twitch.php?login=true');
     exit();
 }
 
@@ -1771,6 +1792,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         }
+        // Token validation - check every 5 minutes
+        function validateToken() {
+            fetch('/services/validate_token.php', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.valid) {
+                    // Token is invalid, redirect to login
+                    showErrorToast('Your session has expired. Redirecting to login...');
+                    setTimeout(() => {
+                        window.location.href = 'https://yourlinks.click/services/twitch.php?login=true';
+                    }, 2000);
+                }
+                // If valid, continue normally (no action needed)
+            })
+            .catch(error => {
+                console.log('Token validation failed:', error);
+                // On network error, don't redirect - might be temporary connectivity issue
+            });
+        }
+        // Start token validation checks every 5 minutes (300000ms)
+        setInterval(validateToken, 300000);
+        // Also validate immediately on page load (after a short delay to ensure page is loaded)
+        setTimeout(validateToken, 10000);
     </script>
 </body>
 </html>
