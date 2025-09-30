@@ -121,6 +121,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$_SESSION['user_id'], $linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expiredPageTitle, $expiredPageMessage, $expirationBehavior]
                 );
                 $success = "Link created successfully!";
+                
+                // Refresh links data
+                $userLinks = $db->select(
+                    "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
+                     CASE 
+                         WHEN l.expires_at IS NOT NULL AND l.expires_at <= NOW() THEN 'expired'
+                         WHEN l.expires_at IS NOT NULL AND l.expires_at <= DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'expiring_soon'
+                         ELSE 'active'
+                     END as expiration_status
+                     FROM links l
+                     LEFT JOIN categories c ON l.category_id = c.id
+                     WHERE l.user_id = ? ORDER BY l.created_at DESC",
+                    [$_SESSION['user_id']]
+                );
             }
         }
     } elseif (isset($_POST['edit_link'])) {
