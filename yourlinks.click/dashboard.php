@@ -584,7 +584,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </h3>
                     <form method="POST" action="">
                         <div class="columns">
-                            <div class="column is-4">
+                            <div class="column is-3">
                                 <div class="field">
                                     <label class="label">Category Name</label>
                                     <div class="control has-icons-left">
@@ -596,7 +596,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </div>
                             </div>
-                            <div class="column is-4">
+                            <div class="column is-3">
                                 <div class="field">
                                     <label class="label">Description (Optional)</label>
                                     <div class="control">
@@ -605,7 +605,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </div>
                             </div>
-                            <div class="column is-2">
+                            <div class="column is-3">
                                 <div class="field">
                                     <label class="label">Color</label>
                                     <div class="control">
@@ -613,11 +613,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </div>
                             </div>
-                            <div class="column is-2">
+                            <div class="column is-3">
                                 <div class="field">
                                     <label class="label">&nbsp;</label>
                                     <div class="control">
-                                        <button type="submit" name="create_category" class="button is-primary is-fullwidth">
+                                        <button type="submit" name="create_category" class="button is-primary">
                                             <span class="icon">
                                                 <i class="fas fa-plus"></i>
                                             </span>
