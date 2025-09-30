@@ -378,13 +378,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <!-- Custom Domain Section -->
             <?php if ($user['login'] === 'gfaundead'): ?>
-            <div class="box has-background-dark-ter has-text-light mt-5">
-                <h2 class="title is-4 has-text-primary">
-                    <i class="fas fa-globe has-text-primary"></i> Custom Domain
-                </h2>
-                <p class="subtitle is-6 has-text-grey-light mb-4">
-                    Use your own domain instead of the subdomain format
-                </p>
+<details class="box has-background-dark-ter has-text-light mt-5" open>
+    <summary>
+        <h2 class="title is-4 has-text-primary">
+            <i class="fas fa-globe has-text-primary"></i> Custom Domain
+        </h2>
+    </summary>
+    <p class="subtitle is-6 has-text-grey-light mb-4">
+        Use your own domain instead of the subdomain format
+    </p>
                 
                 <?php
                 // Get user's custom domain info
@@ -514,13 +516,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p class="mt-2">You can still use the subdomain format if needed.</p>
                 </div>
                 <?php endif; ?>
-            </div>
+            </details>
             <?php else: ?>
             <!-- Feature Coming Soon Section -->
-            <div class="box has-background-dark-ter has-text-light mt-5">
-                <h2 class="title is-4 has-text-primary">
-                    <i class="fas fa-globe has-text-primary"></i> Custom Domain
-                </h2>
+            <details class="box has-background-dark-ter has-text-light mt-5" open>
+                <summary>
+                    <h2 class="title is-4 has-text-primary">
+                        <i class="fas fa-globe has-text-primary"></i> Custom Domain
+                    </h2>
+                </summary>
                 <div class="notification is-info is-dark">
                     <h4 class="title is-5 has-text-info">
                         <i class="fas fa-clock"></i> Feature Coming Soon
@@ -539,13 +543,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <em>This feature is being tested internally and will be available to all users soon!</em>
                     </p>
                 </div>
-            </div>
+            </details>
             <?php endif; ?>
             <!-- Category Management Section -->
-            <div class="box has-background-dark-ter has-text-light mt-5">
-                <h2 class="title is-4 has-text-primary">
-                    <i class="fas fa-tags has-text-primary"></i> Link Categories
-                </h2>
+            <details class="box has-background-dark-ter has-text-light mt-5" open>
+                <summary>
+                    <h2 class="title is-4 has-text-primary">
+                        <i class="fas fa-tags has-text-primary"></i> Link Categories
+                    </h2>
+                </summary>
                 <p class="subtitle is-6 has-text-grey-light mb-4">
                     Organize your links into categories for better management
                 </p>
@@ -660,7 +666,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <?php endif; ?>
-            </div>
+            </details>
             <!-- Success/Error Messages -->
             <?php if (isset($success)): ?>
                 <div class="notification is-success is-dark">
