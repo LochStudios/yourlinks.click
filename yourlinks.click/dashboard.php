@@ -331,8 +331,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-?>
 
+$linkCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND category_id = ?", [$_SESSION['user_id'], $category['id']]);
+?>
 <!DOCTYPE html>
 <html lang="en" class="has-background-dark">
 <head>
@@ -638,38 +639,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </h3>
                     <div class="columns is-multiline">
                         <?php foreach ($userCategories as $category): ?>
-                        <div class="column is-6-tablet is-4-desktop">
-                            <div class="card has-background-dark-ter has-text-light" style="border-left: 4px solid <?php echo htmlspecialchars($category['color']); ?>">
+                        <div class="column is-4-tablet is-3-desktop">
+                            <div class="card has-background-dark-ter has-text-light is-small" style="border-left: 4px solid <?php echo htmlspecialchars($category['color']); ?>">
                                 <div class="card-content">
                                     <div class="media">
                                         <div class="media-left">
-                                            <span class="icon has-text-primary">
+                                            <span class="icon is-small has-text-primary">
                                                 <i class="<?php echo htmlspecialchars($category['icon']); ?>"></i>
                                             </span>
                                         </div>
                                         <div class="media-content">
-                                            <p class="title is-6 has-text-light">
+                                            <p class="title is-7 has-text-light">
                                                 <?php echo htmlspecialchars($category['name']); ?>
                                             </p>
                                             <?php if (!empty($category['description'])): ?>
-                                            <p class="subtitle is-7 has-text-grey-light">
+                                            <p class="subtitle is-8 has-text-grey-light">
                                                 <?php echo htmlspecialchars($category['description']); ?>
                                             </p>
                                             <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="content">
-                                        <?php
-                                        $linkCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND category_id = ?", [$_SESSION['user_id'], $category['id']]);
-                                        ?>
-                                        <span class="tag is-info is-light">
+                                        <span class="tag is-info is-light is-small">
                                             <?php echo $linkCount[0]['count']; ?> links
                                         </span>
-                                        <div class="buttons are-small mt-2">
+                                        <div class="buttons are-small mt-1">
                                             <button type="button" class="button is-danger is-small delete-category-btn"
                                                     data-category-id="<?php echo $category['id']; ?>"
                                                     data-category-name="<?php echo htmlspecialchars($category['name']); ?>">
-                                                <span class="icon">
+                                                <span class="icon is-small">
                                                     <i class="fas fa-trash"></i>
                                                 </span>
                                             </button>
