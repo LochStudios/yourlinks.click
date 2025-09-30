@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     profile_image_url TEXT,
     custom_domain VARCHAR(255) NULL UNIQUE,
     domain_verified BOOLEAN DEFAULT FALSE,
+    domain_verification_token VARCHAR(64) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_twitch_id (twitch_id),
