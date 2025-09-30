@@ -331,8 +331,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
-$linkCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND category_id = ?", [$_SESSION['user_id'], $category['id']]);
 ?>
 <!DOCTYPE html>
 <html lang="en" class="has-background-dark">
@@ -639,31 +637,23 @@ $linkCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? 
                     </h3>
                     <div class="columns is-multiline">
                         <?php foreach ($userCategories as $category): ?>
+                        <?php $linkCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? AND category_id = ?", [$_SESSION['user_id'], $category['id']]); ?>
                         <div class="column is-4-tablet is-3-desktop">
                             <div class="card has-background-dark-ter has-text-light is-small" style="border-left: 4px solid <?php echo htmlspecialchars($category['color']); ?>">
-                                <div class="card-content">
-                                    <div class="media">
-                                        <div class="media-left">
-                                            <span class="icon is-small has-text-primary">
+                                <div class="card-content" style="padding: 0.75rem; overflow: hidden;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; min-width: 0;">
+                                        <div style="display: flex; align-items: center; min-width: 0; flex: 1; margin-right: 0.5rem;">
+                                            <span class="icon has-text-primary" style="flex-shrink: 0; margin-right: 0.5rem;">
                                                 <i class="<?php echo htmlspecialchars($category['icon']); ?>"></i>
                                             </span>
-                                        </div>
-                                        <div class="media-content">
-                                            <p class="title is-7 has-text-light">
+                                            <span class="has-text-light" style="font-weight: 500; margin-right: 0.5rem;">
                                                 <?php echo htmlspecialchars($category['name']); ?>
-                                            </p>
-                                            <?php if (!empty($category['description'])): ?>
-                                            <p class="subtitle is-8 has-text-grey-light">
-                                                <?php echo htmlspecialchars($category['description']); ?>
-                                            </p>
-                                            <?php endif; ?>
+                                            </span>
+                                            <span class="tag is-info is-light is-small" style="flex-shrink: 0;">
+                                                (<?php echo $linkCount[0]['count']; ?>)
+                                            </span>
                                         </div>
-                                    </div>
-                                    <div class="content">
-                                        <span class="tag is-info is-light is-small">
-                                            <?php echo $linkCount[0]['count']; ?> links
-                                        </span>
-                                        <div class="buttons are-small mt-1">
+                                        <div style="flex-shrink: 0;">
                                             <button type="button" class="button is-danger is-small delete-category-btn"
                                                     data-category-id="<?php echo $category['id']; ?>"
                                                     data-category-name="<?php echo htmlspecialchars($category['name']); ?>">
@@ -672,12 +662,12 @@ $linkCount = $db->select("SELECT COUNT(*) as count FROM links WHERE user_id = ? 
                                                 </span>
                                             </button>
                                         </div>
-                                        <!-- Hidden delete form -->
-                                        <form method="POST" action="" class="is-hidden" id="delete-category-form-<?php echo $category['id']; ?>">
-                                            <input type="hidden" name="category_id" value="<?php echo $category['id']; ?>">
-                                            <input type="hidden" name="delete_category" value="1">
-                                        </form>
                                     </div>
+                                    <!-- Hidden delete form -->
+                                    <form method="POST" action="" class="is-hidden" id="delete-category-form-<?php echo $category['id']; ?>">
+                                        <input type="hidden" name="category_id" value="<?php echo $category['id']; ?>">
+                                        <input type="hidden" name="delete_category" value="1">
+                                    </form>
                                 </div>
                             </div>
                         </div>
