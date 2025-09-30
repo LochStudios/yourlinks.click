@@ -1,9 +1,45 @@
 <?php
 // Token validation endpoint for AJAX calls
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Include Twitch service for token validation
-require_once 'services/twitch.php';
+// Include database connection
+require_once 'database.php';
+
+// Include sensitive configuration
+require_once '/var/www/config/yourlinksclick.php';
+
+// Define constants from config variables
+define('TWITCH_CLIENT_ID', $twitch_client_id);
+define('TWITCH_CLIENT_SECRET', $twitch_client_secret);
+
+// Twitch token validation function
+function validateToken($accessToken) {
+    $url = 'https://id.twitch.tv/oauth2/validate';
+    $options = array(
+        'http' => array(
+            'header' => "Authorization: OAuth " . $accessToken . "\r\n",
+            'method' => 'GET'
+        )
+    );
+
+    $context = stream_context_create($options);
+    $result = file_get_contents($url, false, $context);
+
+    if ($result === FALSE) {
+        return false;
+    }
+
+    $response = json_decode($result, true);
+
+    // Check if the response indicates a valid token
+    if (isset($response['client_id']) && isset($response['user_id'])) {
+        return $response;
+    }
+
+    return false;
+}
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['access_token'])) {
@@ -12,8 +48,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['access_token'])) {
     exit();
 }
 
-$twitch = new TwitchAuth();
-$tokenValidation = $twitch->validateToken($_SESSION['access_token']);
+$tokenValidation = validateToken($_SESSION['access_token']);
 
 if (!$tokenValidation || $tokenValidation['user_id'] !== $_SESSION['twitch_user']['id']) {
     // Token is invalid, destroy session
@@ -27,4 +62,3 @@ if (!$tokenValidation || $tokenValidation['user_id'] !== $_SESSION['twitch_user'
 header('Content-Type: application/json');
 echo json_encode(['valid' => true, 'message' => 'Token valid']);
 exit();
-?>
