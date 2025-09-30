@@ -347,6 +347,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/site.css">
+    <style>
+        details[open] .toggle-icon {
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 <body class="has-background-dark has-text-light">
     <!-- Navigation -->
@@ -399,10 +404,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Custom Domain Section -->
             <?php if ($user['login'] === 'gfaundead'): ?>
 <details class="box has-background-dark-ter has-text-light mt-5" open>
-    <summary>
+    <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer;">
         <h2 class="title is-4 has-text-primary">
             <i class="fas fa-globe has-text-primary"></i> Custom Domain
         </h2>
+        <button onclick="this.parentElement.parentElement.toggleAttribute('open')" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+            <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
+        </button>
     </summary>
     <p class="subtitle is-6 has-text-grey-light mb-4">
         Use your own domain instead of the subdomain format
@@ -540,10 +548,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php else: ?>
             <!-- Feature Coming Soon Section -->
             <details class="box has-background-dark-ter has-text-light mt-5" open>
-                <summary>
+                <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer;">
                     <h2 class="title is-4 has-text-primary">
                         <i class="fas fa-globe has-text-primary"></i> Custom Domain
                     </h2>
+                    <button onclick="this.parentElement.parentElement.toggleAttribute('open')" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                        <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
+                    </button>
                 </summary>
                 <div class="notification is-info is-dark">
                     <h4 class="title is-5 has-text-info">
@@ -567,10 +578,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
             <!-- Category Management Section -->
             <details class="box has-background-dark-ter has-text-light mt-5" open>
-                <summary>
+                <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer;">
                     <h2 class="title is-4 has-text-primary">
                         <i class="fas fa-tags has-text-primary"></i> Link Categories
                     </h2>
+                    <button onclick="this.parentElement.parentElement.toggleAttribute('open')" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                        <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
+                    </button>
                 </summary>
                 <p class="subtitle is-6 has-text-grey-light mb-4">
                     Organize your links into categories for better management
