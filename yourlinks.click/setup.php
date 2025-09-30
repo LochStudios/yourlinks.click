@@ -38,7 +38,7 @@ $db = Database::getInstance();
 $conn = $db->getConnection();
 
 // Read the database schema from GitHub
-$schemaUrl = 'https://raw.githubusercontent.com/LochStudios/yourlinks.click/refs/heads/main/database_schema.sql';
+$schemaUrl = 'https://raw.githubusercontent.com/LochStudios/yourlinks.click/main/database_schema.sql';
 $schema = file_get_contents($schemaUrl);
 
 if ($schema === false) {
@@ -47,6 +47,9 @@ if ($schema === false) {
 
 // Split into individual statements
 $statements = array_filter(array_map('trim', explode(';', $schema)));
+
+echo "Fetched " . strlen($schema) . " bytes of schema data.\n";
+echo "Found " . count($statements) . " statements.\n";
 
 $createdTables = 0;
 $errors = [];
@@ -62,11 +65,14 @@ foreach ($statements as $statement) {
         continue;
     }
 
-    // Execute the statement
+    echo "Executing statement: " . substr($statement, 0, 30) . "...\n";
+
     if ($conn->query($statement) === TRUE) {
         if (preg_match('/CREATE TABLE/i', $statement)) {
             $createdTables++;
-            echo "Created table: " . preg_replace('/CREATE TABLE (IF NOT EXISTS )?(\w+).*/i', '$2', $statement) . "\n";
+            echo "Matched CREATE TABLE, created table: " . preg_replace('/CREATE TABLE (IF NOT EXISTS )?(\w+).*/i', '$2', $statement) . "\n";
+        } else {
+            echo "Executed successfully, but not CREATE TABLE.\n";
         }
     } else {
         $errors[] = "Error executing: " . $statement . "\nError: " . $conn->error;
