@@ -3,7 +3,10 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-session_start();
+// Start session only if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Twitch OAuth Configuration
 // Include sensitive configuration from external file
@@ -154,56 +157,64 @@ class TwitchAuth {
     }
 }
 
-// Handle the OAuth flow
-$twitch = new TwitchAuth();
+// Only execute OAuth flow if this file is accessed directly (not included)
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
+    // Handle the OAuth flow
+    $twitch = new TwitchAuth();
 
-if (isset($_GET['login'])) {
-    // Redirect to Twitch OAuth
-    header('Location: ' . $twitch->getAuthUrl());
-    exit();
-} elseif (isset($_GET['code'])) {
-    // Handle OAuth callback
-    $code = $_GET['code'];
-    $state = $_GET['state'];
+    if (isset($_GET['login'])) {
+        // Redirect to Twitch OAuth
+        header('Location: ' . $twitch->getAuthUrl());
+        exit();
+    } elseif (isset($_GET['code'])) {
+        // Handle OAuth callback
+        $code = $_GET['code'];
+        $state = $_GET['state'];
 
-    // Verify state for CSRF protection
-    if (!isset($_SESSION['oauth_state']) || $state !== $_SESSION['oauth_state']) {
-        die('Invalid state parameter');
+        // Verify state for CSRF protection
+        if (!isset($_SESSION['oauth_state']) || $state !== $_SESSION['oauth_state']) {
+            die('Invalid state parameter');
+        }
+
+        // Get access token
+        $tokenData = $twitch->getAccessToken($code);
+        if (!$tokenData || isset($tokenData['error'])) {
+            die('Failed to get access token: ' . ($tokenData['error_description'] ?? 'Unknown error'));
+        }
+
+        // Get user info
+        $userData = $twitch->getUserInfo($tokenData['access_token']);
+        if (!$userData || !isset($userData['data'][0])) {
+            die('Failed to get user information');
+        }
+
+        $user = $userData['data'][0];
+
+        // Save user to database
+        $userId = $twitch->saveUser($user);
+
+        // Store user session
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['twitch_user'] = $user;
+        $_SESSION['access_token'] = $tokenData['access_token'];
+
+        // Redirect to dashboard or home
+        header('Location: /dashboard.php'); // You'll need to create this
+        exit();
+    } elseif (isset($_GET['logout'])) {
+        // Handle logout
+        $_SESSION = array(); // Clear all session variables
+        session_destroy();
+        // Clear the session cookie
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 3600, '/');
+        }
+        header('Location: /');
+        exit();
+    } else {
+        // Invalid request
+        header('HTTP/1.1 400 Bad Request');
+        echo 'Invalid request';
     }
-
-    // Get access token
-    $tokenData = $twitch->getAccessToken($code);
-    if (!$tokenData || isset($tokenData['error'])) {
-        die('Failed to get access token: ' . ($tokenData['error_description'] ?? 'Unknown error'));
-    }
-
-    // Get user info
-    $userData = $twitch->getUserInfo($tokenData['access_token']);
-    if (!$userData || !isset($userData['data'][0])) {
-        die('Failed to get user information');
-    }
-
-    $user = $userData['data'][0];
-
-    // Save user to database
-    $userId = $twitch->saveUser($user);
-
-    // Store user session
-    $_SESSION['user_id'] = $userId;
-    $_SESSION['twitch_user'] = $user;
-    $_SESSION['access_token'] = $tokenData['access_token'];
-
-    // Redirect to dashboard or home
-    header('Location: /dashboard.php'); // You'll need to create this
-    exit();
-} elseif (isset($_GET['logout'])) {
-    // Handle logout
-    session_destroy();
-    header('Location: https://yourlinks.click/services/twitch.php?login=true');
-    exit();
-} else {
-    // Invalid request
-    header('HTTP/1.1 400 Bad Request');
-    echo 'Invalid request';
 }
 ?>

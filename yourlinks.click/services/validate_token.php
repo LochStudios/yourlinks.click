@@ -7,13 +7,6 @@ if (session_status() === PHP_SESSION_NONE) {
 // Include database connection
 require_once 'database.php';
 
-// Include sensitive configuration
-require_once '/var/www/config/yourlinksclick.php';
-
-// Define constants from config variables
-define('TWITCH_CLIENT_ID', $twitch_client_id);
-define('TWITCH_CLIENT_SECRET', $twitch_client_secret);
-
 // Twitch token validation function
 function validateToken($accessToken) {
     $url = 'https://id.twitch.tv/oauth2/validate';
