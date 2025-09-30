@@ -4,6 +4,7 @@
 /webconfig/
 /webconfig/twitch.php
 /webconfig/database.php
+yourlinks.click.conf
 
 # Logs
 *.log
