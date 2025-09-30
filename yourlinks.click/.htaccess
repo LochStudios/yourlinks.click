@@ -8,8 +8,13 @@ RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Handle wildcard subdomains
+# Route username.yourlinks.click to redirect.php
+RewriteCond %{HTTP_HOST} ^([a-zA-Z0-9_-]+)\.yourlinks\.click$ [NC]
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^(.*)$ redirect.php [L,QSA]
+
 # Route username.yourlinks.click/linkname to redirect.php
-RewriteCond %{HTTP_HOST} ^([a-zA-Z0-9-]+)\.yourlinks\.click$ [NC]
+RewriteCond %{HTTP_HOST} ^([a-zA-Z0-9_-]+)\.yourlinks\.click$ [NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ redirect.php [L,QSA]
