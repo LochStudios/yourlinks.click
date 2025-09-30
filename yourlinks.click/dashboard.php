@@ -403,19 +403,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <!-- Custom Domain Section -->
             <?php if ($user['login'] === 'gfaundead'): ?>
-<details class="box has-background-dark-ter has-text-light mt-5" open>
-    <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer;">
-        <h2 class="title is-4 has-text-primary">
-            <i class="fas fa-globe has-text-primary"></i> Custom Domain
-        </h2>
-        <button onclick="this.parentElement.parentElement.toggleAttribute('open')" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
-            <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
-        </button>
-    </summary>
-    <p class="subtitle is-6 has-text-grey-light mb-4">
-        Use your own domain instead of the subdomain format
-    </p>
-                
+                <details class="box has-background-dark-ter has-text-light mt-5" open data-section="custom-domain">
+                <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer;">
+                    <h2 class="title is-4 has-text-primary">
+                        <i class="fas fa-globe has-text-primary"></i> Custom Domain
+                    </h2>
+                    <button onclick="toggleSection(this)" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                        <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
+                    </button>
+                </summary>
+                <p class="subtitle is-6 has-text-grey-light mb-4">
+                    Use your own domain instead of the subdomain format
+                </p>
                 <?php
                 // Get user's custom domain info
                 $userDomainInfo = $db->select("SELECT custom_domain, domain_verified, domain_verification_token FROM users WHERE id = ?", [$_SESSION['user_id']]);
@@ -547,12 +546,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </details>
             <?php else: ?>
             <!-- Feature Coming Soon Section -->
-            <details class="box has-background-dark-ter has-text-light mt-5" open>
+            <details class="box has-background-dark-ter has-text-light mt-5" open data-section="custom-domain-coming-soon">
                 <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer;">
                     <h2 class="title is-4 has-text-primary">
                         <i class="fas fa-globe has-text-primary"></i> Custom Domain
                     </h2>
-                    <button onclick="this.parentElement.parentElement.toggleAttribute('open')" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                    <button onclick="toggleSection(this)" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
                         <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
                     </button>
                 </summary>
@@ -577,12 +576,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </details>
             <?php endif; ?>
             <!-- Category Management Section -->
-            <details class="box has-background-dark-ter has-text-light mt-5" open>
+            <details class="box has-background-dark-ter has-text-light mt-5" open data-section="category-management">
                 <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer;">
                     <h2 class="title is-4 has-text-primary">
                         <i class="fas fa-tags has-text-primary"></i> Link Categories
                     </h2>
-                    <button onclick="this.parentElement.parentElement.toggleAttribute('open')" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                    <button onclick="toggleSection(this)" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
                         <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
                     </button>
                 </summary>
@@ -1340,6 +1339,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Toastify JS -->
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
+        // Cookie utility functions
+        function setCookie(name, value, days = 30) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/';
+        }
+        
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+        
+        // Initialize collapse states from cookies
+        function initializeCollapseStates() {
+            // Check all details elements with data-section attribute
+            document.querySelectorAll('details[data-section]').forEach(details => {
+                const sectionName = details.getAttribute('data-section');
+                const collapsed = getCookie(sectionName + '-collapsed');
+                if (collapsed === 'true') {
+                    details.removeAttribute('open');
+                }
+            });
+        }
+        
+        // Save collapse state to cookie
+        function saveCollapseState(sectionName, isCollapsed) {
+            setCookie(sectionName + '-collapsed', isCollapsed ? 'true' : 'false');
+        }
+        
+        // Toggle section and save state
+        function toggleSection(button) {
+            const details = button.parentElement.parentElement;
+            const sectionName = details.getAttribute('data-section');
+            const isOpen = details.hasAttribute('open');
+            
+            if (isOpen) {
+                details.removeAttribute('open');
+                saveCollapseState(sectionName, true);
+            } else {
+                details.setAttribute('open', '');
+                saveCollapseState(sectionName, false);
+            }
+        }
         // Toastify notification functions
         function showSuccessToast(message) {
             Toastify({
@@ -1823,6 +1871,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setInterval(validateToken, 300000);
         // Also validate immediately on page load (after a short delay to ensure page is loaded)
         setTimeout(validateToken, 10000);
+        
+        // Initialize collapse states from cookies
+        initializeCollapseStates();
     </script>
 </body>
 </html>
