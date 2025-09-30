@@ -43,9 +43,3 @@ RewriteRule ^(.*)$ index.php [L,QSA]
     Order Allow,Deny
     Deny from all
 </Files>
-
-# Protect config directory
-<Directory "../config">
-    Order Deny,Allow
-    Deny from all
-</Directory>
