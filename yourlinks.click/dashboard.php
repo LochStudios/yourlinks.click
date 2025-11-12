@@ -67,14 +67,12 @@ if (empty($userCategories)) {
         ['name' => 'Videos', 'description' => 'Video content links', 'color' => '#ff0000', 'icon' => 'fab fa-youtube'],
         ['name' => 'Other', 'description' => 'Miscellaneous links', 'color' => '#607d8b', 'icon' => 'fas fa-link']
     ];
-
     foreach ($defaultCategories as $category) {
         $db->insert(
             "INSERT INTO categories (user_id, name, description, color, icon) VALUES (?, ?, ?, ?, ?)",
             [$_SESSION['user_id'], $category['name'], $category['description'], $category['color'], $category['icon']]
         );
     }
-
     // Refresh categories
     $userCategories = $db->select(
         "SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC",
@@ -95,7 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $expiredRedirectUrl = trim($_POST['expired_redirect_url'] ?? '');
         $expiredPageTitle = trim($_POST['expired_page_title'] ?? 'Link Expired');
         $expiredPageMessage = trim($_POST['expired_page_message'] ?? 'This link has expired and is no longer available.');
-        
         // Validate inputs
         if (empty($linkName) || empty($originalUrl)) {
             $error = "Link name and destination URL are required.";
@@ -121,7 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$_SESSION['user_id'], $linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expiredPageTitle, $expiredPageMessage, $expirationBehavior]
                 );
                 $success = "Link created successfully!";
-                
                 // Refresh links data
                 $userLinks = $db->select(
                     "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
@@ -149,7 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $expiredRedirectUrl = trim($_POST['edit_expired_redirect_url'] ?? '');
         $expiredPageTitle = trim($_POST['edit_expired_page_title'] ?? 'Link Expired');
         $expiredPageMessage = trim($_POST['edit_expired_page_message'] ?? 'This link has expired and is no longer available.');
-        
         // Validate inputs
         if (empty($linkName) || empty($originalUrl)) {
             $error = "Link name and destination URL are required.";
@@ -175,7 +170,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$linkName, $originalUrl, $title, $categoryId, $expiresAt, $expiredRedirectUrl, $expiredPageTitle, $expiredPageMessage, $expirationBehavior, $linkId, $_SESSION['user_id']]
                 );
                 $success = "Link updated successfully!";
-                
                 // Refresh links data
                 $userLinks = $db->select(
                     "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
@@ -194,14 +188,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (isset($_POST['activate_link']) && isset($_POST['link_id'])) {
         // Activate existing link
         $linkId = (int)$_POST['link_id'];
-        
         // Update the link to be active
         $db->execute(
             "UPDATE links SET is_active = TRUE WHERE id = ? AND user_id = ?",
             [$linkId, $_SESSION['user_id']]
         );
         $success = "Link activated successfully!";
-        
         // Refresh links data
         $userLinks = $db->select(
             "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
@@ -220,11 +212,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $linkId = (int)$_POST['deactivate_link_id'];
         $deactivateBehavior = $_POST['deactivate_behavior'] ?? 'inactive';
         $deactivateRedirectUrl = trim($_POST['deactivate_redirect_url'] ?? '');
-        
         $deactivateRedirectUrl = trim($_POST['deactivate_redirect_url'] ?? '');
         $deactivatedPageTitle = trim($_POST['deactivated_page_title'] ?? 'Link Deactivated');
         $deactivatedPageMessage = trim($_POST['deactivated_page_message'] ?? 'This link has been deactivated and is no longer available.');
-        
         // Validate inputs
         if ($deactivateBehavior === 'redirect' && empty($deactivateRedirectUrl)) {
             $error = "Redirect URL is required when deactivation behavior is set to redirect.";
@@ -237,7 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$deactivateBehavior, $deactivateRedirectUrl, $deactivatedPageTitle, $deactivatedPageMessage, $linkId, $_SESSION['user_id']]
             );
             $success = "Link deactivated successfully!";
-            
             // Refresh links data
             $userLinks = $db->select(
                 "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
@@ -257,7 +246,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user['login'] === 'gfaundead') {
             $customDomain = trim($_POST['custom_domain']);
             $domainError = null;
-            
             if (!empty($customDomain)) {
                 // Validate domain format
                 if (!preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $customDomain)) {
@@ -272,7 +260,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
-            
             if (!$domainError) {
                 $db->execute(
                     "UPDATE users SET custom_domain = ?, domain_verified = FALSE WHERE id = ?",
@@ -290,7 +277,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $categoryDescription = trim($_POST['category_description'] ?? '');
         $categoryColor = trim($_POST['category_color'] ?? '#3273dc');
         $categoryIcon = trim($_POST['category_icon'] ?? 'fas fa-tag');
-
         if (empty($categoryName)) {
             $error = "Category name is required.";
         } else {
@@ -334,7 +320,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "UPDATE users SET domain_verification_token = ? WHERE id = ?",
                 [$verificationToken, $_SESSION['user_id']]
             );
-            
             // Get user's custom domain
             $userData = $db->select("SELECT custom_domain FROM users WHERE id = ?", [$_SESSION['user_id']]);
             if ($userData && $userData[0]['custom_domain']) {
