@@ -269,7 +269,7 @@ function handleApiRequest() {
 
 function handleAddLink() {
     // Validate API key
-    $apiKey = isset($_GET['api_key']) ? $_GET['api_key'] : null;
+    $apiKey = isset($_GET['api']) ? $_GET['api'] : null;
     $auth = new ApiAuth($apiKey);
     // Create link manager
     $linkManager = new LinkManager($auth->getUserId());
