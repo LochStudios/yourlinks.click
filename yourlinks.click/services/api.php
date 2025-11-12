@@ -144,7 +144,7 @@ class ApiAuth {
         $sql = "SELECT username, email, twitch_display_name, profile_image FROM users WHERE twitch_user_id = ? LIMIT 1";
         $result = $websiteDb->select($sql, [$this->twitchUserId]);
         if (empty($result)) {
-            ApiResponse::error('User not found in website database. Please register on the website first.', 404);
+            ApiResponse::error('User not found in website database. Please register on BotOfTheSpecter first.', 404);
         }
         $userData = $result[0];
         // Insert new user into YourLinks database
@@ -180,11 +180,11 @@ class LinkManager {
     }
     public function addLink($params) {
         // Validate required parameters
-        if (empty($params['link_name']) || empty($params['original_url'])) {
-            ApiResponse::error('Missing required parameters: link_name and original_url', 400);
+        if (empty($params['link_name']) || empty($params['destination'])) {
+            ApiResponse::error('Missing required parameters: link_name and destination', 400);
         }
         $linkName = trim($params['link_name']);
-        $originalUrl = trim($params['original_url']);
+        $originalUrl = trim($params['destination']);
         $title = isset($params['title']) ? trim($params['title']) : $linkName;
         $categoryId = isset($params['category_id']) ? intval($params['category_id']) : null;
         $expiresAt = isset($params['expires_at']) ? $params['expires_at'] : null;
@@ -196,7 +196,7 @@ class LinkManager {
         }
         // Validate URL format
         if (!filter_var($originalUrl, FILTER_VALIDATE_URL)) {
-            ApiResponse::error('Invalid URL format for original_url', 400);
+            ApiResponse::error('Invalid URL format for destination', 400);
         }
         // Check if link_name is unique for this user
         $checkSql = "SELECT id FROM links WHERE user_id = ? AND link_name = ? LIMIT 1";
@@ -263,21 +263,8 @@ class LinkManager {
 }
 
 function handleApiRequest() {
-    // Get the action parameter
-    $action = isset($_GET['action']) ? $_GET['action'] : 'add_link';
-    switch ($action) {
-        case 'add_link':
-            handleAddLink();
-            break;
-        case 'list_links':
-            handleListLinks();
-            break;
-        case 'get_link':
-            handleGetLink();
-            break;
-        default:
-            ApiResponse::error('Unknown action: ' . htmlspecialchars($action), 400);
-    }
+    // Default to add_link action (only action currently needed for initial implementation)
+    handleAddLink();
 }
 
 function handleAddLink() {
