@@ -368,6 +368,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body class="has-background-dark has-text-light">
+    <!-- Cookie Notice -->
+    <div id="cookie-notice" class="notification is-info is-dark" style="margin: 0; border-radius: 0; position: sticky; top: 0; z-index: 1000; display: none;">
+        <button class="delete" id="cookie-notice-close"></button>
+        <div class="content">
+            <p style="margin-bottom: 0;">
+                <i class="fas fa-cookie-bite"></i>
+                <strong>Cookie Notice</strong><br>
+                <small>We use cookies to remember your menu preferences. Your collapse/expand settings for sections will be saved automatically.</small>
+            </p>
+        </div>
+    </div>
     <!-- Navigation -->
     <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
@@ -1371,6 +1382,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return null;
         }
         
+        function deleteCookie(name) {
+            setCookie(name, '', -1);
+        }
+        // Show cookie notice on first visit
+        function showCookieNotice() {
+            const cookieNoticeShown = getCookie('cookie-notice-shown');
+            const cookieNoticeEl = document.getElementById('cookie-notice');
+            
+            if (!cookieNoticeShown && cookieNoticeEl) {
+                cookieNoticeEl.style.display = 'block';
+                setCookie('cookie-notice-shown', 'true', 365);
+            }
+        }
         // Initialize collapse states from cookies
         function initializeCollapseStates() {
             // Check all details elements with data-section attribute
@@ -1379,13 +1403,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const collapsed = getCookie(sectionName + '-collapsed');
                 if (collapsed === 'true') {
                     details.removeAttribute('open');
+                } else if (collapsed === 'false') {
+                    details.setAttribute('open', '');
+                } else {
+                    // Default state - keep current state if no cookie exists
+                    if (details.hasAttribute('open')) {
+                        details.setAttribute('open', '');
+                    } else {
+                        details.removeAttribute('open');
+                    }
                 }
             });
         }
         
         // Save collapse state to cookie
         function saveCollapseState(sectionName, isCollapsed) {
-            setCookie(sectionName + '-collapsed', isCollapsed ? 'true' : 'false');
+            setCookie(sectionName + '-collapsed', isCollapsed ? 'true' : 'false', 30);
+            showCollapseNotification(sectionName, isCollapsed);
+        }
+        // Show brief notification when section is collapsed/expanded
+        function showCollapseNotification(sectionName, isCollapsed) {
+            const statusText = isCollapsed ? 'Collapsed' : 'Expanded';
+            const sectionLabel = sectionName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            Toastify({
+                text: `${sectionLabel} ${statusText}. (Saved)`,
+                duration: 2000,
+                gravity: "bottom",
+                position: "right",
+                backgroundColor: "linear-gradient(to right, #3273dc, #209cee)",
+                stopOnFocus: true,
+                className: "collapse-toast"
+            }).showToast();
         }
         
         // Toggle section and save state
@@ -1886,8 +1934,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Also validate immediately on page load (after a short delay to ensure page is loaded)
         setTimeout(validateToken, 10000);
         
-        // Initialize collapse states from cookies
-        initializeCollapseStates();
+        // Cookie notice close button handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const cookieNoticeClose = document.getElementById('cookie-notice-close');
+            if (cookieNoticeClose) {
+                cookieNoticeClose.addEventListener('click', function() {
+                    document.getElementById('cookie-notice').style.display = 'none';
+                });
+            }
+            // Initialize collapse states from cookies
+            initializeCollapseStates();
+            // Show cookie notice on first visit
+            showCookieNotice();
+        });
     </script>
 </body>
 </html>
