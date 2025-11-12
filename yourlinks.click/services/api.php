@@ -131,10 +131,37 @@ class ApiAuth {
         $yourlinksDb = ApiDatabase::getInstance(DB_YOURLINKS);
         $sql = "SELECT id FROM users WHERE twitch_id = ? LIMIT 1";
         $result = $yourlinksDb->select($sql, [$this->twitchUserId]);
-        if (empty($result)) {
-            ApiResponse::error('User not found. Twitch ID may not be registered in YourLinks.', 404);
+        if (!empty($result)) {
+            $this->userId = $result[0]['id'];
+        } else {
+            // User not found in YourLinks, create them from website database
+            $this->createUserFromWebsite($yourlinksDb);
         }
-        $this->userId = $result[0]['id'];
+    }
+    private function createUserFromWebsite($yourlinksDb) {
+        // Fetch user data from website database
+        $websiteDb = ApiDatabase::getInstance(DB_WEBSITE);
+        $sql = "SELECT username, email, twitch_display_name, profile_image FROM users WHERE twitch_user_id = ? LIMIT 1";
+        $result = $websiteDb->select($sql, [$this->twitchUserId]);
+        if (empty($result)) {
+            ApiResponse::error('User not found in website database. Please register on the website first.', 404);
+        }
+        $userData = $result[0];
+        // Insert new user into YourLinks database
+        $insertSql = "INSERT INTO users (
+            twitch_id, 
+            username, 
+            email, 
+            display_name, 
+            profile_image_url
+        ) VALUES (?, ?, ?, ?, ?)";
+        $this->userId = $yourlinksDb->insert($insertSql, [
+            $this->twitchUserId,
+            $userData['username'],
+            $userData['email'],
+            $userData['twitch_display_name'],
+            $userData['profile_image']
+        ]);
     }
     public function getUserId() {
         return $this->userId;
