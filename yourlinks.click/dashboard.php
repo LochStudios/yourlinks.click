@@ -241,6 +241,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$_SESSION['user_id']]
             );
         }
+    } elseif (isset($_POST['delete_link']) && isset($_POST['link_id'])) {
+        // Delete existing link
+        $linkId = (int)$_POST['link_id'];
+        // Verify the link belongs to the user before deleting
+        $link = $db->select("SELECT id FROM links WHERE id = ? AND user_id = ?", [$linkId, $_SESSION['user_id']]);
+        if ($link) {
+            $db->execute("DELETE FROM links WHERE id = ? AND user_id = ?", [$linkId, $_SESSION['user_id']]);
+            $success = "Link deleted successfully!";
+            // Refresh links data
+            $userLinks = $db->select(
+                "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
+                 CASE 
+                     WHEN l.expires_at IS NOT NULL AND l.expires_at <= NOW() THEN 'expired'
+                     WHEN l.expires_at IS NOT NULL AND l.expires_at <= DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'expiring_soon'
+                     ELSE 'active'
+                 END as expiration_status
+                 FROM links l
+                 LEFT JOIN categories c ON l.category_id = c.id
+                 WHERE l.user_id = ? ORDER BY l.created_at DESC",
+                [$_SESSION['user_id']]
+            );
+        } else {
+            $error = "Link not found or you don't have permission to delete it.";
+        }
     } elseif (isset($_POST['update_custom_domain'])) {
         // Only allow custom domain updates for testing user
         if ($user['login'] === 'gfaundead') {
