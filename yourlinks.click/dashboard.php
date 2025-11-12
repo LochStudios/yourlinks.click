@@ -433,9 +433,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h2 class="title is-4 has-text-primary">
                         <i class="fas fa-globe has-text-primary"></i> Custom Domain
                     </h2>
-                    <button onclick="toggleSection(this)" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                    <span style="flex-shrink: 0;">
                         <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
-                    </button>
+                    </span>
                 </summary>
                 <p class="subtitle is-6 has-text-grey-light mb-4">
                     Use your own domain instead of the subdomain format
@@ -576,9 +576,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h2 class="title is-4 has-text-primary">
                         <i class="fas fa-globe has-text-primary"></i> Custom Domain
                     </h2>
-                    <button onclick="toggleSection(this)" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                    <span style="flex-shrink: 0;">
                         <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
-                    </button>
+                    </span>
                 </summary>
                 <div class="notification is-info is-dark">
                     <h4 class="title is-5 has-text-info">
@@ -606,9 +606,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h2 class="title is-4 has-text-primary">
                         <i class="fas fa-tags has-text-primary"></i> Link Categories
                     </h2>
-                    <button onclick="toggleSection(this)" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.5rem;">
+                    <span style="flex-shrink: 0;">
                         <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.2s;"></i>
-                    </button>
+                    </span>
                 </summary>
                 <p class="subtitle is-6 has-text-grey-light mb-4">
                     Organize your links into categories for better management
@@ -1437,17 +1437,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Toggle section and save state
-        function toggleSection(button) {
-            const details = button.parentElement.parentElement;
-            const sectionName = details.getAttribute('data-section');
-            const isOpen = details.hasAttribute('open');
+        function toggleDetailsSection(summaryElement) {
+            // Get the parent details element
+            const details = summaryElement.closest('details');
+            if (!details) return;
             
-            if (isOpen) {
+            const sectionName = details.getAttribute('data-section');
+            const isCurrentlyOpen = details.hasAttribute('open');
+            
+            if (isCurrentlyOpen) {
+                // Close the details
                 details.removeAttribute('open');
                 saveCollapseState(sectionName, true);
             } else {
+                // Open the details
                 details.setAttribute('open', '');
                 saveCollapseState(sectionName, false);
+            }
+        }
+        
+        // Legacy toggle function (kept for backwards compatibility, but should use toggleDetailsSection)
+        function toggleSection(button) {
+            const summary = button.closest('summary');
+            if (summary) {
+                toggleDetailsSection(summary);
             }
         }
         // Toastify notification functions
@@ -1942,10 +1955,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     document.getElementById('cookie-notice').style.display = 'none';
                 });
             }
+            
             // Initialize collapse states from cookies
             initializeCollapseStates();
+            
             // Show cookie notice on first visit
             showCookieNotice();
+            
+            // Add event listeners to all details elements to save state when toggled
+            document.querySelectorAll('details[data-section]').forEach(details => {
+                details.addEventListener('toggle', function() {
+                    const sectionName = this.getAttribute('data-section');
+                    const isNowOpen = this.hasAttribute('open');
+                    // Save state: if it's open now, we just opened it (collapsed = false)
+                    // if it's closed now, we just closed it (collapsed = true)
+                    saveCollapseState(sectionName, !isNowOpen);
+                });
+            });
         });
     </script>
 </body>
