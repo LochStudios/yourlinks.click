@@ -1,88 +1,87 @@
 <?php
-    // Enable error reporting for debugging
-    ini_set('display_errors', 1);
-    error_reporting(E_ALL);
+$v = md5(filemtime('/style.css'));
 ?>
 <!DOCTYPE html>
-<html lang="en" class="has-background-dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YourLinks.click - Link Management Service</title>
-    <!-- Bulma CSS with Dark Mode -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma-dark-mode@1.0.4/dist/css/bulma-dark-mode.min.css">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/site.css">
+    <link rel="stylesheet" href="https://cdn.botofthespecter.com/css/fontawesome-7.1.0/css/all.css">
+    <!-- Site CSS -->
+    <link rel="stylesheet" href="/css/site.css?v=<?php echo $v; ?>">
 </head>
-<body class="has-background-dark has-text-light">
-    <section class="hero is-fullheight has-background-dark">
-        <div class="hero-body">
-            <div class="container has-text-centered">
-                <div class="columns is-centered">
-                    <div class="column is-8">
-                        <h1 class="title is-1 has-text-primary">
-                            <i class="fas fa-link has-text-primary"></i> Welcome to YourLinks.click
-                        </h1>
-                        <div class="box has-background-dark-ter has-text-light">
-                            <h2 class="subtitle is-4 has-text-grey-light">
-                                A powerful link management service that helps you organize, track, and optimize your links.
-                            </h2>
-                            <div class="content has-text-left">
-                                <h3 class="title is-4 has-text-grey-light">
-                                    <i class="fas fa-star has-text-warning"></i> Features:
-                                </h3>
-                                <div class="columns is-multiline">
-                                    <div class="column is-6">
-                                        <div class="box has-background-grey-darker has-text-light">
-                                            <i class="fas fa-magic has-text-info"></i>
-                                            <strong>Create short, memorable links</strong>
-                                        </div>
-                                    </div>
-                                    <div class="column is-6">
-                                        <div class="box has-background-grey-darker has-text-light">
-                                            <i class="fas fa-chart-line has-text-success"></i>
-                                            <strong>Track click analytics and performance</strong>
-                                        </div>
-                                    </div>
-                                    <div class="column is-6">
-                                        <div class="box has-background-grey-darker has-text-light">
-                                            <i class="fas fa-folder has-text-warning"></i>
-                                            <strong>Organize links into categories</strong>
-                                        </div>
-                                    </div>
-                                    <div class="column is-6">
-                                        <div class="box has-background-grey-darker has-text-light">
-                                            <i class="fas fa-clock has-text-danger"></i>
-                                            <strong>Custom link expiration dates</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="box has-background-info-dark has-text-light">
-                                    <i class="fas fa-shield-alt has-text-info"></i>
-                                    <strong>Secure authentication via Twitch</strong>
-                                </div>
-                            </div>
-                            <p class="has-text-grey">
-                                Get started by logging in with your Twitch account to access your personalized dashboard.
-                            </p>
-                            <div class="buttons is-centered mt-5">
-                                <a href="/services/twitch.php?login=true" class="button is-large is-primary">
-                                    <span class="icon">
-                                        <i class="fab fa-twitch"></i>
-                                    </span>
-                                    <span>Login with Twitch</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+<body>
+    <!-- Top Nav -->
+    <nav class="db-topnav">
+        <a href="/" class="db-topnav-brand">
+            <i class="fas fa-link" style="color: var(--accent-hover);"></i>
+            YourLinks.click
+        </a>
+    </nav>
+    <!-- Hero -->
+    <div class="db-hero">
+        <h1><i class="fas fa-link" style="color: var(--accent-hover);"></i> Welcome to YourLinks.click</h1>
+        <p class="db-hero-sub">A powerful link management service for streamers and creators.</p>
+        <p class="db-hero-desc">Organize, track, and share your links — all from one personalized dashboard.</p>
+    </div>
+    <!-- Features -->
+    <div class="db-landing-section">
+        <div class="db-landing-section-header">
+            <h2><i class="fas fa-star" style="color: var(--amber);"></i> Features</h2>
+            <p>Everything you need to manage your online presence.</p>
+        </div>
+        <div class="db-features-grid">
+            <div class="db-feature-card">
+                <div class="db-feature-card-icon" style="color: var(--blue);">
+                    <i class="fas fa-magic"></i>
                 </div>
+                <h4>Short, Memorable Links</h4>
+                <p>Create clean, branded links at <em>yourname.yourlinks.click/linkname</em></p>
+            </div>
+            <div class="db-feature-card">
+                <div class="db-feature-card-icon" style="color: var(--green);">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h4>Click Analytics</h4>
+                <p>Track clicks and monitor the performance of every link you create.</p>
+            </div>
+            <div class="db-feature-card">
+                <div class="db-feature-card-icon" style="color: var(--amber);">
+                    <i class="fas fa-folder"></i>
+                </div>
+                <h4>Link Categories</h4>
+                <p>Organize your links into color-coded categories for easy management.</p>
+            </div>
+            <div class="db-feature-card">
+                <div class="db-feature-card-icon" style="color: var(--red);">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h4>Expiration Dates</h4>
+                <p>Set links to expire automatically — perfect for limited-time promotions.</p>
             </div>
         </div>
-    </section>
-    <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <!-- Auth notice -->
+        <div class="sp-alert sp-alert-info" style="max-width: 640px; margin: 0 auto 2rem;">
+            <i class="fas fa-shield-alt"></i>
+            <strong>Secure authentication via Twitch.</strong>
+            Log in with your existing Twitch account — no new password to remember.
+        </div>
+        <!-- Login card -->
+        <div class="db-login-card">
+            <h3>Get Started</h3>
+            <p>Sign in with your Twitch account to access your personalized link dashboard.</p>
+            <a href="/services/twitch.php?login=true" class="db-twitch-btn">
+                <i class="fab fa-twitch"></i>
+                Login with Twitch
+            </a>
+            <p class="db-login-note">By logging in you agree to our use of cookies for session management.</p>
+        </div>
+    </div>
+    <!-- Footer -->
+    <footer class="db-landing-footer">
+        &copy; <?php echo date('Y'); ?> YourLinks.click &mdash; A BotOfTheSpecter service
+    </footer>
 </body>
 </html>

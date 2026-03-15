@@ -37,19 +37,31 @@ require_once 'services/database.php';
 $db = Database::getInstance();
 $conn = $db->getConnection();
 
-// Read the database schema from GitHub
-$schemaUrl = 'https://raw.githubusercontent.com/LochStudios/yourlinks.click/main/database_schema.sql';
-$schema = file_get_contents($schemaUrl);
+// Read the database schema from local file
+$schemaFile = __DIR__ . '/database_schema.sql';
+$schema = file_get_contents($schemaFile);
 
 if ($schema === false) {
-    die("Failed to fetch database schema from GitHub\n");
+    die("Failed to read database schema from local file\n");
 }
 
 // Split into individual statements
 $statements = array_filter(array_map('trim', explode(';', $schema)));
 
-echo "Fetched " . strlen($schema) . " bytes of schema data.\n";
-echo "Found " . count($statements) . " statements.\n";
+// Clean comments from each statement
+foreach ($statements as &$statement) {
+    $lines = explode("\n", $statement);
+    $lines = array_filter($lines, function($line) {
+        return !preg_match('/^--/', trim($line));
+    });
+    $statement = trim(implode("\n", $lines));
+}
+
+// Re-filter empty statements
+$statements = array_filter($statements);
+
+echo "Fetched " . strlen($schema) . " bytes of schema data from local file.\n";
+echo "Found " . count($statements) . " statements after cleaning.\n";
 
 $createdTables = 0;
 $errors = [];

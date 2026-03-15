@@ -22,8 +22,7 @@ function showCustomPage($title, $message, $type) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>' . htmlspecialchars($title) . '</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.botofthespecter.com/css/fontawesome-7.1.0/css/all.css">
     <style>
         body {
             background: linear-gradient(135deg, ' . $bgColor . ' 0%, ' . $color . ' 100%);
@@ -79,7 +78,7 @@ function showCustomPage($title, $message, $type) {
         <div class="icon-large">
             <i class="' . $icon . '"></i>
         </div>
-        <h1 class="title is-2">' . htmlspecialchars($title) . '</h1>
+        <h1 class="title">' . htmlspecialchars($title) . '</h1>
         <p class="message">' . nl2br(htmlspecialchars($message)) . '</p>
         <a href="/" class="back-link">
             <i class="fas fa-home mr-2"></i>
