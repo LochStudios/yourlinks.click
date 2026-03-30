@@ -72,7 +72,7 @@ $v = md5(filemtime('/style.css'));
         <div class="db-login-card">
             <h3>Get Started</h3>
             <p>Sign in with your Twitch account to access your personalized link dashboard.</p>
-            <a href="/services/twitch.php?login=true" class="db-twitch-btn">
+            <a href="https://streamersconnect.com/?service=twitch&login=yourlinks.click&scopes=user:read:email&return_url=https://yourlinks.click/callback.php" class="db-twitch-btn">
                 <i class="fab fa-twitch"></i>
                 Login with Twitch
             </a>

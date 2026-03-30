@@ -5,9 +5,12 @@ error_reporting(E_ALL);
 
 session_start();
 
+// Login URL via StreamersConnect
+define('SC_LOGIN_URL', 'https://streamersconnect.com/?service=twitch&login=yourlinks.click&scopes=user:read:email&return_url=https://yourlinks.click/callback.php');
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: https://yourlinks.click/services/twitch.php?login=true');
+    header('Location: ' . SC_LOGIN_URL);
     exit();
 }
 
@@ -18,7 +21,7 @@ require_once 'services/twitch.php';
 if (!isset($_SESSION['access_token'])) {
     // No token stored, redirect to login
     session_destroy();
-    header('Location: https://yourlinks.click/services/twitch.php?login=true');
+    header('Location: ' . SC_LOGIN_URL);
     exit();
 }
 
@@ -28,7 +31,7 @@ $tokenValidation = $twitch->validateToken($_SESSION['access_token']);
 if (!$tokenValidation || $tokenValidation['user_id'] !== $_SESSION['twitch_user']['id']) {
     // Token is invalid or doesn't match the user, destroy session and redirect to login
     session_destroy();
-    header('Location: https://yourlinks.click/services/twitch.php?login=true');
+    header('Location: ' . SC_LOGIN_URL);
     exit();
 }
 
@@ -1544,7 +1547,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!data.valid) {
                     showErrorToast('Your session has expired. Redirecting to login...');
                     setTimeout(() => {
-                        window.location.href = 'https://yourlinks.click/services/twitch.php?login=true';
+                        window.location.href = 'https://streamersconnect.com/?service=twitch&login=yourlinks.click&scopes=user:read:email&return_url=https://yourlinks.click/callback.php';
                     }, 2000);
                 }
             })
