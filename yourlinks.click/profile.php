@@ -86,6 +86,9 @@ $accentSafe = htmlspecialchars($accentColor);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?> — YourLinks.click</title>
+    <link rel="icon" type="image/png" href="https://cdn.botofthespecter.com/logo.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="https://cdn.botofthespecter.com/logo.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="https://cdn.botofthespecter.com/logo.png">
     <meta name="description" content="<?php echo htmlspecialchars($bio ?: $pageTitle . '\'s links'); ?>">
     <link rel="stylesheet" href="https://cdn.botofthespecter.com/css/fontawesome-7.1.0/css/all.css">
     <style>
