@@ -41,6 +41,51 @@ require_once 'services/database.php';
 $db = Database::getInstance();
 $user = $_SESSION['twitch_user'];
 
+// Ensure profile tables exist
+$db->query("CREATE TABLE IF NOT EXISTS profile_settings (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT NOT NULL UNIQUE,
+    bio          VARCHAR(500)  DEFAULT NULL,
+    page_title   VARCHAR(100)  DEFAULT NULL,
+    accent_color VARCHAR(7)    NOT NULL DEFAULT '#7c5cbf',
+    show_profile_pic TINYINT(1) NOT NULL DEFAULT 1,
+    created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+$db->query("CREATE TABLE IF NOT EXISTS profile_links (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT NOT NULL,
+    platform      VARCHAR(50)   NOT NULL DEFAULT 'custom',
+    title         VARCHAR(100)  NOT NULL,
+    url           VARCHAR(2048) NOT NULL,
+    display_order INT NOT NULL DEFAULT 0,
+    is_active     TINYINT(1) NOT NULL DEFAULT 1,
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+// Platform definitions (shared with profile.php)
+$platformDefs = [
+    'twitch'    => ['icon' => 'fab fa-twitch',    'label' => 'Twitch',      'color' => '#6441a5'],
+    'youtube'   => ['icon' => 'fab fa-youtube',   'label' => 'YouTube',     'color' => '#ff0000'],
+    'twitter'   => ['icon' => 'fab fa-x-twitter', 'label' => 'X / Twitter', 'color' => '#e7e7e7'],
+    'instagram' => ['icon' => 'fab fa-instagram', 'label' => 'Instagram',   'color' => '#e1306c'],
+    'discord'   => ['icon' => 'fab fa-discord',   'label' => 'Discord',     'color' => '#5865f2'],
+    'tiktok'    => ['icon' => 'fab fa-tiktok',    'label' => 'TikTok',      'color' => '#e7e7e7'],
+    'facebook'  => ['icon' => 'fab fa-facebook',  'label' => 'Facebook',    'color' => '#1877f2'],
+    'linkedin'  => ['icon' => 'fab fa-linkedin',  'label' => 'LinkedIn',    'color' => '#0077b5'],
+    'spotify'   => ['icon' => 'fab fa-spotify',   'label' => 'Spotify',     'color' => '#1db954'],
+    'github'    => ['icon' => 'fab fa-github',    'label' => 'GitHub',      'color' => '#e7e7e7'],
+    'custom'    => ['icon' => 'fas fa-link',      'label' => 'Custom Link', 'color' => '#7c5cbf'],
+];
+
+// Load profile data
+$profileSettings = $db->select("SELECT * FROM profile_settings WHERE user_id = ?", [$_SESSION['user_id']]);
+$profileSettings = !empty($profileSettings) ? $profileSettings[0] : [];
+$profileLinksList = $db->select(
+    "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order ASC, id ASC",
+    [$_SESSION['user_id']]
+);
+
 // Get user's links for search functionality
 $userLinks = $db->select(
     "SELECT l.*, c.name as category_name, c.color as category_color, c.icon as category_icon,
@@ -268,8 +313,106 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Link not found or you don't have permission to delete it.";
         }
+    } elseif (isset($_POST['save_profile_settings'])) {
+        $bio         = substr(trim($_POST['profile_bio'] ?? ''), 0, 500);
+        $pageTitle   = substr(trim($_POST['profile_page_title'] ?? ''), 0, 100);
+        $accentColor = trim($_POST['profile_accent_color'] ?? '#7c5cbf');
+        $showPic     = isset($_POST['profile_show_pic']) ? 1 : 0;
+        // Validate accent colour
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $accentColor)) {
+            $accentColor = '#7c5cbf';
+        }
+        $existing = $db->select("SELECT id FROM profile_settings WHERE user_id = ?", [$_SESSION['user_id']]);
+        if (empty($existing)) {
+            $db->insert(
+                "INSERT INTO profile_settings (user_id, bio, page_title, accent_color, show_profile_pic) VALUES (?, ?, ?, ?, ?)",
+                [$_SESSION['user_id'], $bio ?: null, $pageTitle ?: null, $accentColor, $showPic]
+            );
+        } else {
+            $db->execute(
+                "UPDATE profile_settings SET bio = ?, page_title = ?, accent_color = ?, show_profile_pic = ? WHERE user_id = ?",
+                [$bio ?: null, $pageTitle ?: null, $accentColor, $showPic, $_SESSION['user_id']]
+            );
+        }
+        $success = "Profile settings saved!";
+        $profileSettings = $db->select("SELECT * FROM profile_settings WHERE user_id = ?", [$_SESSION['user_id']]);
+        $profileSettings = !empty($profileSettings) ? $profileSettings[0] : [];
+    } elseif (isset($_POST['add_profile_link'])) {
+        $platform = $_POST['pl_platform'] ?? 'custom';
+        $title    = substr(trim($_POST['pl_title'] ?? ''), 0, 100);
+        $url      = trim($_POST['pl_url'] ?? '');
+        $isActive = isset($_POST['pl_active']) ? 1 : 0;
+        $allowed  = array_keys($platformDefs);
+        if (!in_array($platform, $allowed, true)) $platform = 'custom';
+        if (empty($title) || empty($url)) {
+            $error = "Title and URL are required.";
+        } elseif (!filter_var($url, FILTER_VALIDATE_URL)) {
+            $error = "Please enter a valid URL.";
+        } else {
+            $maxOrder = $db->select("SELECT MAX(display_order) as mo FROM profile_links WHERE user_id = ?", [$_SESSION['user_id']]);
+            $nextOrder = (int)($maxOrder[0]['mo'] ?? -1) + 1;
+            $db->insert(
+                "INSERT INTO profile_links (user_id, platform, title, url, display_order, is_active) VALUES (?, ?, ?, ?, ?, ?)",
+                [$_SESSION['user_id'], $platform, $title, $url, $nextOrder, $isActive]
+            );
+            $success = "Profile link added!";
+        }
+        $profileLinksList = $db->select(
+            "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order ASC, id ASC",
+            [$_SESSION['user_id']]
+        );
+    } elseif (isset($_POST['edit_profile_link']) && isset($_POST['plink_id'])) {
+        $plinkId  = (int)$_POST['plink_id'];
+        $platform = $_POST['pl_platform'] ?? 'custom';
+        $title    = substr(trim($_POST['pl_title'] ?? ''), 0, 100);
+        $url      = trim($_POST['pl_url'] ?? '');
+        $isActive = isset($_POST['pl_active']) ? 1 : 0;
+        $allowed  = array_keys($platformDefs);
+        if (!in_array($platform, $allowed, true)) $platform = 'custom';
+        if (empty($title) || empty($url)) {
+            $error = "Title and URL are required.";
+        } elseif (!filter_var($url, FILTER_VALIDATE_URL)) {
+            $error = "Please enter a valid URL.";
+        } else {
+            $db->execute(
+                "UPDATE profile_links SET platform = ?, title = ?, url = ?, is_active = ? WHERE id = ? AND user_id = ?",
+                [$platform, $title, $url, $isActive, $plinkId, $_SESSION['user_id']]
+            );
+            $success = "Profile link updated!";
+        }
+        $profileLinksList = $db->select(
+            "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order ASC, id ASC",
+            [$_SESSION['user_id']]
+        );
+    } elseif (isset($_POST['delete_profile_link']) && isset($_POST['plink_id'])) {
+        $plinkId = (int)$_POST['plink_id'];
+        $db->execute("DELETE FROM profile_links WHERE id = ? AND user_id = ?", [$plinkId, $_SESSION['user_id']]);
+        $success = "Profile link removed.";
+        $profileLinksList = $db->select(
+            "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order ASC, id ASC",
+            [$_SESSION['user_id']]
+        );
+    } elseif (isset($_POST['move_profile_link']) && isset($_POST['plink_id']) && isset($_POST['direction'])) {
+        $plinkId   = (int)$_POST['plink_id'];
+        $direction = $_POST['direction'] === 'up' ? 'up' : 'down';
+        $current   = $db->select("SELECT id, display_order FROM profile_links WHERE id = ? AND user_id = ?", [$plinkId, $_SESSION['user_id']]);
+        if (!empty($current)) {
+            $curOrder = (int)$current[0]['display_order'];
+            if ($direction === 'up') {
+                $swap = $db->select("SELECT id, display_order FROM profile_links WHERE user_id = ? AND display_order < ? ORDER BY display_order DESC LIMIT 1", [$_SESSION['user_id'], $curOrder]);
+            } else {
+                $swap = $db->select("SELECT id, display_order FROM profile_links WHERE user_id = ? AND display_order > ? ORDER BY display_order ASC LIMIT 1", [$_SESSION['user_id'], $curOrder]);
+            }
+            if (!empty($swap)) {
+                $db->execute("UPDATE profile_links SET display_order = ? WHERE id = ?", [(int)$swap[0]['display_order'], $plinkId]);
+                $db->execute("UPDATE profile_links SET display_order = ? WHERE id = ?", [$curOrder, (int)$swap[0]['id']]);
+            }
+        }
+        $profileLinksList = $db->select(
+            "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order ASC, id ASC",
+            [$_SESSION['user_id']]
+        );
     } elseif (isset($_POST['update_custom_domain'])) {
-        // Only allow custom domain updates for testing user
         if ($user['login'] === 'gfaundead') {
             $customDomain = trim($_POST['custom_domain']);
             $domainError = null;
@@ -418,6 +561,232 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </p>
                     <p class="yl-user-desc">Manage your links and view analytics from your dashboard.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Public Profile Page Section -->
+        <details class="sp-card yl-detail-section" open data-section="profile-page">
+            <summary class="sp-card-header yl-section-toggle">
+                <span class="sp-card-title">
+                    <i class="fas fa-id-card" style="color: var(--accent-hover);"></i> Public Profile Page
+                </span>
+                <i class="fas fa-chevron-down yl-section-toggle-icon"></i>
+            </summary>
+            <div class="sp-card-body">
+                <p class="sp-help" style="margin-bottom:1.25rem;">
+                    This is your public Linktree-style page — people visiting
+                    <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click</strong>
+                    will see these links.
+                    <a href="https://<?php echo htmlspecialchars($user['login']); ?>.yourlinks.click" target="_blank" class="sp-btn sp-btn-secondary sp-btn-sm" style="margin-left:0.5rem;">
+                        <i class="fas fa-external-link-alt"></i> Preview
+                    </a>
+                </p>
+
+                <!-- Profile appearance settings -->
+                <div class="sp-card" style="margin-bottom:1.5rem;">
+                    <div class="sp-card-header">
+                        <span class="sp-card-title"><i class="fas fa-palette"></i> Appearance</span>
+                    </div>
+                    <div class="sp-card-body">
+                        <form method="POST" action="">
+                            <div class="yl-form-row">
+                                <div class="sp-form-group">
+                                    <label class="sp-label" for="profile_page_title">Display Name / Page Title</label>
+                                    <input class="sp-input" type="text" id="profile_page_title" name="profile_page_title"
+                                           value="<?php echo htmlspecialchars($profileSettings['page_title'] ?? ''); ?>"
+                                           placeholder="<?php echo htmlspecialchars($user['display_name']); ?> (default)">
+                                    <span class="sp-help">Leave blank to use your Twitch display name</span>
+                                </div>
+                                <div class="sp-form-group">
+                                    <label class="sp-label" for="profile_accent_color">Accent Colour</label>
+                                    <input class="sp-input" type="color" id="profile_accent_color" name="profile_accent_color"
+                                           value="<?php echo htmlspecialchars($profileSettings['accent_color'] ?? '#7c5cbf'); ?>"
+                                           style="height:2.5rem;padding:0.3rem;cursor:pointer;">
+                                </div>
+                            </div>
+                            <div class="sp-form-group">
+                                <label class="sp-label" for="profile_bio">Bio</label>
+                                <textarea class="sp-input" id="profile_bio" name="profile_bio"
+                                          rows="3" maxlength="500"
+                                          placeholder="A short bio shown on your profile page (max 500 chars)"
+                                          style="resize:vertical;"><?php echo htmlspecialchars($profileSettings['bio'] ?? ''); ?></textarea>
+                            </div>
+                            <div class="sp-form-group">
+                                <label class="sp-label" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <input type="checkbox" name="profile_show_pic" id="profile_show_pic"
+                                           <?php echo (!isset($profileSettings['show_profile_pic']) || $profileSettings['show_profile_pic']) ? 'checked' : ''; ?>>
+                                    Show profile picture
+                                </label>
+                            </div>
+                            <button type="submit" name="save_profile_settings" class="sp-btn sp-btn-primary">
+                                <i class="fas fa-save"></i> Save Appearance
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Add a new profile link -->
+                <div class="sp-card" style="margin-bottom:1.5rem;">
+                    <div class="sp-card-header">
+                        <span class="sp-card-title"><i class="fas fa-plus-circle"></i> Add Profile Link</span>
+                    </div>
+                    <div class="sp-card-body">
+                        <form method="POST" action="">
+                            <div class="yl-form-row">
+                                <div class="sp-form-group">
+                                    <label class="sp-label" for="pl_platform">Platform</label>
+                                    <select class="sp-input" id="pl_platform" name="pl_platform">
+                                        <?php foreach ($platformDefs as $key => $pdef): ?>
+                                        <option value="<?php echo htmlspecialchars($key); ?>">
+                                            <?php echo htmlspecialchars($pdef['label']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="sp-form-group">
+                                    <label class="sp-label" for="pl_title">Button Label</label>
+                                    <input class="sp-input" type="text" id="pl_title" name="pl_title"
+                                           required placeholder="e.g., My YouTube Channel">
+                                </div>
+                            </div>
+                            <div class="sp-form-group">
+                                <label class="sp-label" for="pl_url">URL</label>
+                                <div class="sp-input-wrap">
+                                    <span class="sp-input-icon"><i class="fas fa-globe"></i></span>
+                                    <input class="sp-input" type="url" id="pl_url" name="pl_url"
+                                           required placeholder="https://...">
+                                </div>
+                            </div>
+                            <div class="sp-form-group">
+                                <label class="sp-label" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <input type="checkbox" name="pl_active" id="pl_active" checked>
+                                    Show on profile page
+                                </label>
+                            </div>
+                            <button type="submit" name="add_profile_link" class="sp-btn sp-btn-primary">
+                                <i class="fas fa-plus"></i> Add Link
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Existing profile links -->
+                <?php if (!empty($profileLinksList)): ?>
+                <div class="sp-card">
+                    <div class="sp-card-header">
+                        <span class="sp-card-title"><i class="fas fa-list"></i> Your Profile Links</span>
+                    </div>
+                    <div class="sp-card-body" style="padding:0;">
+                        <div class="yl-profile-links-list">
+                            <?php foreach ($profileLinksList as $idx => $pl):
+                                $pInfo = $platformDefs[$pl['platform']] ?? $platformDefs['custom'];
+                                $isFirst = $idx === 0;
+                                $isLast  = $idx === count($profileLinksList) - 1;
+                            ?>
+                            <div class="yl-profile-link-row <?php echo $pl['is_active'] ? '' : 'yl-profile-link-inactive'; ?>">
+                                <span class="yl-profile-link-icon" style="color:<?php echo htmlspecialchars($pInfo['color']); ?>;">
+                                    <i class="<?php echo htmlspecialchars($pInfo['icon']); ?>"></i>
+                                </span>
+                                <div class="yl-profile-link-info">
+                                    <span class="yl-profile-link-title"><?php echo htmlspecialchars($pl['title']); ?></span>
+                                    <span class="yl-profile-link-url"><?php echo htmlspecialchars($pl['url']); ?></span>
+                                </div>
+                                <?php if (!$pl['is_active']): ?>
+                                <span class="sp-badge sp-badge-grey">Hidden</span>
+                                <?php endif; ?>
+                                <!-- Reorder buttons -->
+                                <div class="yl-profile-link-actions">
+                                    <?php if (!$isFirst): ?>
+                                    <form method="POST" action="" style="display:inline;">
+                                        <input type="hidden" name="plink_id" value="<?php echo $pl['id']; ?>">
+                                        <input type="hidden" name="direction" value="up">
+                                        <button type="submit" name="move_profile_link" class="sp-btn sp-btn-secondary sp-btn-sm" title="Move up">
+                                            <i class="fas fa-arrow-up"></i>
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                    <?php if (!$isLast): ?>
+                                    <form method="POST" action="" style="display:inline;">
+                                        <input type="hidden" name="plink_id" value="<?php echo $pl['id']; ?>">
+                                        <input type="hidden" name="direction" value="down">
+                                        <button type="submit" name="move_profile_link" class="sp-btn sp-btn-secondary sp-btn-sm" title="Move down">
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                    <!-- Edit button triggers inline form -->
+                                    <button type="button" class="sp-btn sp-btn-info sp-btn-sm yl-plink-edit-btn"
+                                            data-id="<?php echo $pl['id']; ?>"
+                                            data-platform="<?php echo htmlspecialchars($pl['platform']); ?>"
+                                            data-title="<?php echo htmlspecialchars($pl['title']); ?>"
+                                            data-url="<?php echo htmlspecialchars($pl['url']); ?>"
+                                            data-active="<?php echo $pl['is_active'] ? '1' : '0'; ?>">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                    <!-- Delete -->
+                                    <form method="POST" action="" style="display:inline;" class="yl-plink-delete-form">
+                                        <input type="hidden" name="plink_id" value="<?php echo $pl['id']; ?>">
+                                        <button type="submit" name="delete_profile_link" class="sp-btn sp-btn-danger sp-btn-sm"
+                                                data-name="<?php echo htmlspecialchars($pl['title']); ?>">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php else: ?>
+                <div class="sp-alert sp-alert-info">
+                    <i class="fas fa-info-circle"></i> No profile links yet — add your first link above.
+                </div>
+                <?php endif; ?>
+            </div>
+        </details>
+
+        <!-- Edit Profile Link Modal (hidden, shown via JS) -->
+        <div id="plink-edit-modal" class="yl-modal" style="display:none;">
+            <div class="yl-modal-box">
+                <div class="yl-modal-header">
+                    <span><i class="fas fa-pencil-alt"></i> Edit Profile Link</span>
+                    <button type="button" id="plink-edit-modal-close" class="yl-modal-close">&times;</button>
+                </div>
+                <form method="POST" action="">
+                    <input type="hidden" name="plink_id" id="edit_plink_id">
+                    <div class="sp-form-group">
+                        <label class="sp-label">Platform</label>
+                        <select class="sp-input" name="pl_platform" id="edit_pl_platform">
+                            <?php foreach ($platformDefs as $key => $pdef): ?>
+                            <option value="<?php echo htmlspecialchars($key); ?>">
+                                <?php echo htmlspecialchars($pdef['label']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="sp-form-group">
+                        <label class="sp-label">Button Label</label>
+                        <input class="sp-input" type="text" name="pl_title" id="edit_pl_title" required>
+                    </div>
+                    <div class="sp-form-group">
+                        <label class="sp-label">URL</label>
+                        <div class="sp-input-wrap">
+                            <span class="sp-input-icon"><i class="fas fa-globe"></i></span>
+                            <input class="sp-input" type="url" name="pl_url" id="edit_pl_url" required>
+                        </div>
+                    </div>
+                    <div class="sp-form-group">
+                        <label class="sp-label" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" name="pl_active" id="edit_pl_active"> Show on profile page
+                        </label>
+                    </div>
+                    <div class="sp-btn-group">
+                        <button type="submit" name="edit_profile_link" class="sp-btn sp-btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <button type="button" id="plink-edit-modal-cancel" class="sp-btn sp-btn-secondary">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -1502,6 +1871,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         document.getElementById('delete-category-form-' + categoryId).submit();
                     }
                 });
+            });
+        });
+
+        // Profile link — edit modal
+        const plinkEditModal   = document.getElementById('plink-edit-modal');
+        const plinkEditClose   = document.getElementById('plink-edit-modal-close');
+        const plinkEditCancel  = document.getElementById('plink-edit-modal-cancel');
+
+        document.querySelectorAll('.yl-plink-edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('edit_plink_id').value     = this.dataset.id;
+                document.getElementById('edit_pl_title').value     = this.dataset.title;
+                document.getElementById('edit_pl_url').value       = this.dataset.url;
+                document.getElementById('edit_pl_active').checked  = this.dataset.active === '1';
+                const sel = document.getElementById('edit_pl_platform');
+                for (let opt of sel.options) {
+                    if (opt.value === this.dataset.platform) { opt.selected = true; break; }
+                }
+                plinkEditModal.style.display = 'flex';
+            });
+        });
+        if (plinkEditClose)  plinkEditClose.addEventListener('click',  () => { plinkEditModal.style.display = 'none'; });
+        if (plinkEditCancel) plinkEditCancel.addEventListener('click', () => { plinkEditModal.style.display = 'none'; });
+        window.addEventListener('click', e => { if (e.target === plinkEditModal) plinkEditModal.style.display = 'none'; });
+
+        // Profile link — delete confirmation
+        document.querySelectorAll('.yl-plink-delete-form button[name="delete_profile_link"]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const name = this.dataset.name;
+                const form = this.closest('form');
+                Swal.fire({
+                    title: 'Remove Link?',
+                    text: `Remove "${name}" from your profile page?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f14668',
+                    cancelButtonColor: '#363636',
+                    confirmButtonText: 'Yes, remove it!',
+                    background: '#1a1a20',
+                    color: '#e8e8f0'
+                }).then(result => { if (result.isConfirmed) form.submit(); });
             });
         });
 

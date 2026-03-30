@@ -2993,3 +2993,143 @@ label.switch .check { display: none; }
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================
+   Profile Page Management — Dashboard UI
+   ========================================================== */
+
+/* Profile links list in dashboard */
+.yl-profile-links-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.yl-profile-link-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition);
+}
+
+.yl-profile-link-row:last-child {
+    border-bottom: none;
+}
+
+.yl-profile-link-row:hover {
+    background: var(--bg-card-hover);
+}
+
+.yl-profile-link-inactive {
+    opacity: 0.55;
+}
+
+.yl-profile-link-icon {
+    font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.yl-profile-link-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.yl-profile-link-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.yl-profile-link-url {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.yl-profile-link-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+
+/* Badges */
+.sp-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.sp-badge-grey {
+    background: var(--grey-bg);
+    color: var(--grey);
+}
+
+/* Modal overlay */
+.yl-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.yl-modal-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 480px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+.yl-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.yl-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color var(--transition);
+}
+
+.yl-modal-close:hover {
+    color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+    .yl-profile-link-url {
+        display: none;
+    }
+}

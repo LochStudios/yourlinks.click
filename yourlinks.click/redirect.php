@@ -121,20 +121,10 @@ if ($subdomain === 'yourlinks' || $subdomain === 'www') {
 // Extract link name from URI (remove leading slash and query parameters)
 $linkName = trim(parse_url($requestUri, PHP_URL_PATH), '/');
 
-// If no link name provided, redirect to user's main page (could be their Twitch profile)
+// If no link name provided, show the user's public profile (Linktree-style) page
 if (empty($linkName)) {
-    // Try to find user and redirect to their Twitch profile
-    $user = $db->select("SELECT * FROM users WHERE username = ?", [$subdomain]);
-    if ($user) {
-        // Redirect to Twitch profile
-        $twitchUrl = "https://twitch.tv/" . $user[0]['username'];
-        header('Location: ' . $twitchUrl);
-        exit();
-    } else {
-        header('HTTP/1.0 404 Not Found');
-        echo 'User not found';
-        exit();
-    }
+    require __DIR__ . '/profile.php';
+    exit();
 }
 
 // Find the link in database (including expired and deactivated links to handle their behaviors)
