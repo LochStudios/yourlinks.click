@@ -66,7 +66,7 @@ $v = filemtime(__DIR__ . '/css/site.css');
             </div>
         </div>
         <!-- Auth notice -->
-        <div class="sp-alert sp-alert-info" style="max-width: 640px; margin: 0 auto 2rem;">
+        <div class="sp-alert sp-alert-info" style="max-width: 640px; margin: 1.5rem auto 2rem;">
             <i class="fas fa-shield-alt"></i>
             <strong>Secure authentication via Twitch.</strong>
             Log in with your existing Twitch account — no new password to remember.
