@@ -49,9 +49,15 @@ $db->query("CREATE TABLE IF NOT EXISTS profile_settings (
     page_title   VARCHAR(100)  DEFAULT NULL,
     accent_color VARCHAR(7)    NOT NULL DEFAULT '#7c5cbf',
     show_profile_pic TINYINT(1) NOT NULL DEFAULT 1,
+    home_mode    ENUM('linktree','twitch_redirect') NOT NULL DEFAULT 'linktree',
     created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+$_col_check = $db->getConnection()->query("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'profile_settings' AND COLUMN_NAME = 'home_mode'");
+if ($_col_check && $_col_check->num_rows === 0) {
+    $db->getConnection()->query("ALTER TABLE profile_settings ADD COLUMN home_mode ENUM('linktree','twitch_redirect') NOT NULL DEFAULT 'linktree'");
+}
+unset($_col_check);
 $db->query("CREATE TABLE IF NOT EXISTS profile_links (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     user_id       INT NOT NULL,
@@ -318,6 +324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pageTitle   = substr(trim($_POST['profile_page_title'] ?? ''), 0, 100);
         $accentColor = trim($_POST['profile_accent_color'] ?? '#7c5cbf');
         $showPic     = isset($_POST['profile_show_pic']) ? 1 : 0;
+        $homeMode    = ($_POST['home_mode'] ?? 'linktree') === 'twitch_redirect' ? 'twitch_redirect' : 'linktree';
         // Validate accent colour
         if (!preg_match('/^#[0-9a-fA-F]{6}$/', $accentColor)) {
             $accentColor = '#7c5cbf';
@@ -325,13 +332,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $existing = $db->select("SELECT id FROM profile_settings WHERE user_id = ?", [$_SESSION['user_id']]);
         if (empty($existing)) {
             $db->insert(
-                "INSERT INTO profile_settings (user_id, bio, page_title, accent_color, show_profile_pic) VALUES (?, ?, ?, ?, ?)",
-                [$_SESSION['user_id'], $bio ?: null, $pageTitle ?: null, $accentColor, $showPic]
+                "INSERT INTO profile_settings (user_id, bio, page_title, accent_color, show_profile_pic, home_mode) VALUES (?, ?, ?, ?, ?, ?)",
+                [$_SESSION['user_id'], $bio ?: null, $pageTitle ?: null, $accentColor, $showPic, $homeMode]
             );
         } else {
             $db->execute(
-                "UPDATE profile_settings SET bio = ?, page_title = ?, accent_color = ?, show_profile_pic = ? WHERE user_id = ?",
-                [$bio ?: null, $pageTitle ?: null, $accentColor, $showPic, $_SESSION['user_id']]
+                "UPDATE profile_settings SET bio = ?, page_title = ?, accent_color = ?, show_profile_pic = ?, home_mode = ? WHERE user_id = ?",
+                [$bio ?: null, $pageTitle ?: null, $accentColor, $showPic, $homeMode, $_SESSION['user_id']]
             );
         }
         $success = "Profile settings saved!";
@@ -620,6 +627,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                            <?php echo (!isset($profileSettings['show_profile_pic']) || $profileSettings['show_profile_pic']) ? 'checked' : ''; ?>>
                                     Show profile picture
                                 </label>
+                            </div>
+                            <div class="sp-form-group">
+                                <label class="sp-label">Default page behaviour</label>
+                                <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.25rem;">
+                                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-weight:400;">
+                                        <input type="radio" name="home_mode" value="linktree"
+                                               <?php echo (($profileSettings['home_mode'] ?? 'linktree') === 'linktree') ? 'checked' : ''; ?>>
+                                        Show my Linktree profile page
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-weight:400;">
+                                        <input type="radio" name="home_mode" value="twitch_redirect"
+                                               <?php echo (($profileSettings['home_mode'] ?? '') === 'twitch_redirect') ? 'checked' : ''; ?>>
+                                        Redirect visitors straight to my Twitch channel
+                                    </label>
+                                </div>
+                                <span class="sp-help">Controls what happens when someone visits <strong><?php echo htmlspecialchars($user['login']); ?>.yourlinks.click</strong> with no link path.</span>
                             </div>
                             <button type="submit" name="save_profile_settings" class="sp-btn sp-btn-primary">
                                 <i class="fas fa-save"></i> Save Appearance

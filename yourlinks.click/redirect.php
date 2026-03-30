@@ -92,6 +92,13 @@ function showCustomPage($title, $message, $type) {
 </html>';
 }
 
+// Add home_mode column if it does not yet exist (compatible with MySQL < 8.0)
+$_col_check = $db->getConnection()->query("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'profile_settings' AND COLUMN_NAME = 'home_mode'");
+if ($_col_check && $_col_check->num_rows === 0) {
+    $db->getConnection()->query("ALTER TABLE profile_settings ADD COLUMN home_mode ENUM('linktree','twitch_redirect') NOT NULL DEFAULT 'linktree'");
+}
+unset($_col_check);
+
 // Get the subdomain (username) and link name from the URL
 $host = $_SERVER['HTTP_HOST'];
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -124,8 +131,26 @@ if ($subdomain === 'yourlinks' || $subdomain === 'www') {
 // Extract link name from URI (remove leading slash and query parameters)
 $linkName = trim(parse_url($requestUri, PHP_URL_PATH), '/');
 
-// If no link name provided, show the user's public profile (Linktree-style) page
+// If no link name provided, check whether the user prefers a Twitch redirect or the linktree page
 if (empty($linkName)) {
+    // Look up the user so we can check their home_mode preference
+    $profileUserRow = $db->select("SELECT id, username FROM users WHERE username = ?", [$subdomain]);
+    if ($profileUserRow) {
+        $profileUserId = $profileUserRow[0]['id'];
+        $homeSettings  = $db->select("SELECT home_mode FROM profile_settings WHERE user_id = ?", [$profileUserId]);
+        $homeMode      = !empty($homeSettings) ? ($homeSettings[0]['home_mode'] ?? 'linktree') : 'linktree';
+        // If the user has no profile settings and no profile links, default to Twitch redirect
+        if (empty($homeSettings)) {
+            $profileLinksCount = $db->select("SELECT COUNT(*) as cnt FROM profile_links WHERE user_id = ?", [$profileUserId]);
+            if (empty($profileLinksCount) || (int)($profileLinksCount[0]['cnt'] ?? 0) === 0) {
+                $homeMode = 'twitch_redirect';
+            }
+        }
+        if ($homeMode === 'twitch_redirect') {
+            header('Location: https://twitch.tv/' . rawurlencode($subdomain), true, 302);
+            exit();
+        }
+    }
     require __DIR__ . '/profile.php';
     exit();
 }

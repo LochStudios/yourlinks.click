@@ -23,6 +23,7 @@ $db->query("CREATE TABLE IF NOT EXISTS profile_settings (
     page_title   VARCHAR(100)  DEFAULT NULL,
     accent_color VARCHAR(7)    NOT NULL DEFAULT '#7c5cbf',
     show_profile_pic TINYINT(1) NOT NULL DEFAULT 1,
+    home_mode    ENUM('linktree','twitch_redirect') NOT NULL DEFAULT 'linktree',
     created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
