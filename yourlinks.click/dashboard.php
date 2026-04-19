@@ -507,7 +507,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Custom domains are currently in development.";
         }
+    } elseif (isset($_POST['admin_update_brandfetch']) && $user['login'] === 'gfaundead') {
+        $bfDomain  = trim($_POST['bf_domain'] ?? '');
+        $bfIconUrl = trim($_POST['bf_icon_url'] ?? '');
+        if (!empty($bfDomain)) {
+            $bfIconUrl = $bfIconUrl === '' ? null : $bfIconUrl;
+            $existing  = $db->select("SELECT id FROM brandfetch_cache WHERE domain = ?", [$bfDomain]);
+            if ($existing) {
+                $db->execute(
+                    "UPDATE brandfetch_cache SET icon_url = ?, fetched_at = NOW() WHERE domain = ?",
+                    [$bfIconUrl, $bfDomain]
+                );
+            } else {
+                $db->execute(
+                    "INSERT INTO brandfetch_cache (domain, icon_url) VALUES (?, ?)",
+                    [$bfDomain, $bfIconUrl]
+                );
+            }
+            $success = "Brandfetch cache updated for: " . htmlspecialchars($bfDomain);
+        }
+    } elseif (isset($_POST['admin_delete_brandfetch']) && $user['login'] === 'gfaundead') {
+        $bfDomain = trim($_POST['bf_domain'] ?? '');
+        if (!empty($bfDomain)) {
+            $db->execute("DELETE FROM brandfetch_cache WHERE domain = ?", [$bfDomain]);
+            $success = "Brandfetch cache entry deleted for: " . htmlspecialchars($bfDomain);
+        }
     }
+}
+// Load brandfetch cache entries for admin panel
+$brandfetchEntries = [];
+if ($user['login'] === 'gfaundead') {
+    $brandfetchEntries = $db->select(
+        "SELECT domain, icon_url, fetched_at FROM brandfetch_cache ORDER BY fetched_at DESC"
+    );
 }
 ?>
 <!DOCTYPE html>
@@ -1260,6 +1292,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     </div><!-- /.yl-main -->
 
+    <?php if ($user['login'] === 'gfaundead'): ?>
+    <!-- Admin: Brandfetch Cache Manager -->
+    <div class="yl-main" style="margin-top: 1.5rem;">
+        <details class="sp-card yl-detail-section" data-section="admin-brandfetch">
+            <summary class="sp-card-header yl-section-toggle">
+                <span class="sp-card-title">
+                    <i class="fas fa-image" style="color: var(--accent-hover);"></i> Admin: Brandfetch Icon Cache
+                </span>
+                <i class="fas fa-chevron-down yl-section-toggle-icon"></i>
+            </summary>
+            <div class="sp-card-body">
+                <p class="sp-help" style="margin-bottom: 1.25rem;">
+                    Domains with a <strong>NULL</strong> icon have no Brandfetch entry — they will show the
+                    <i class="fas fa-link"></i> icon. You can manually set an icon URL or clear an entry so the API retries after 30 days.
+                </p>
+                <!-- Add / Update entry form -->
+                <div class="sp-card" style="margin-bottom: 1.5rem;">
+                    <div class="sp-card-header">
+                        <span class="sp-card-title"><i class="fas fa-pencil-alt"></i> Add / Update Entry</span>
+                    </div>
+                    <div class="sp-card-body">
+                        <form method="POST" action="">
+                            <div class="yl-form-row">
+                                <div class="sp-form-group" style="flex:1;">
+                                    <label class="sp-label">Domain</label>
+                                    <div class="sp-input-wrap">
+                                        <span class="sp-input-icon"><i class="fas fa-globe"></i></span>
+                                        <input class="sp-input" type="text" name="bf_domain" required placeholder="e.g. fourthwall.com">
+                                    </div>
+                                </div>
+                                <div class="sp-form-group" style="flex:2;">
+                                    <label class="sp-label">Icon URL <em style="font-weight:400;">(leave blank to store NULL)</em></label>
+                                    <div class="sp-input-wrap">
+                                        <span class="sp-input-icon"><i class="fas fa-image"></i></span>
+                                        <input class="sp-input" type="url" name="bf_icon_url" placeholder="https://...">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" name="admin_update_brandfetch" class="sp-btn sp-btn-primary">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <!-- Cache entries table -->
+                <?php if (!empty($brandfetchEntries)): ?>
+                <div class="sp-table-wrap">
+                    <table class="sp-table">
+                        <thead>
+                            <tr>
+                                <th>Domain</th>
+                                <th>Icon Preview</th>
+                                <th>Icon URL</th>
+                                <th>Fetched At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($brandfetchEntries as $bfe): $bfId = 'bfe-' . md5($bfe['domain']); ?>
+                            <tr id="row-<?php echo $bfId; ?>">
+                                <td><strong><?php echo htmlspecialchars($bfe['domain']); ?></strong></td>
+                                <td style="text-align:center;">
+                                    <?php if ($bfe['icon_url']): ?>
+                                        <img src="<?php echo htmlspecialchars($bfe['icon_url']); ?>" alt="" style="height:28px;width:28px;object-fit:contain;">
+                                    <?php else: ?>
+                                        <i class="fas fa-link" style="color:var(--text-muted);"></i>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="word-break:break-all;max-width:320px;font-size:0.8rem;">
+                                    <?php echo $bfe['icon_url'] ? htmlspecialchars($bfe['icon_url']) : '<em style="color:var(--text-muted);">NULL</em>'; ?>
+                                </td>
+                                <td style="white-space:nowrap;"><?php echo htmlspecialchars($bfe['fetched_at']); ?></td>
+                                <td style="white-space:nowrap;">
+                                    <button type="button" class="sp-btn sp-btn-info sp-btn-sm" title="Edit icon URL"
+                                            onclick="bfToggleEdit('<?php echo $bfId; ?>')">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                    <form method="POST" action="" style="display:inline;" onsubmit="return confirm('Delete cache entry for <?php echo htmlspecialchars(addslashes($bfe['domain'])); ?>?');">
+                                        <input type="hidden" name="bf_domain" value="<?php echo htmlspecialchars($bfe['domain']); ?>">
+                                        <button type="submit" name="admin_delete_brandfetch" class="sp-btn sp-btn-danger sp-btn-sm" title="Delete entry (API will retry after 30 days)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr id="edit-<?php echo $bfId; ?>" style="display:none;">
+                                <td colspan="5" style="background:var(--bg-secondary,#1e1e2e);padding:0.75rem 1rem;">
+                                    <form method="POST" action="" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+                                        <input type="hidden" name="bf_domain" value="<?php echo htmlspecialchars($bfe['domain']); ?>">
+                                        <div class="sp-form-group" style="flex:1;min-width:260px;margin-bottom:0;">
+                                            <label class="sp-label" style="font-size:0.8rem;">Icon URL for <strong><?php echo htmlspecialchars($bfe['domain']); ?></strong> <em style="font-weight:400;">(leave blank for NULL)</em></label>
+                                            <div class="sp-input-wrap">
+                                                <span class="sp-input-icon"><i class="fas fa-image"></i></span>
+                                                <input class="sp-input" type="url" name="bf_icon_url"
+                                                       value="<?php echo htmlspecialchars($bfe['icon_url'] ?? ''); ?>"
+                                                       placeholder="https://...">
+                                            </div>
+                                        </div>
+                                        <button type="submit" name="admin_update_brandfetch" class="sp-btn sp-btn-primary sp-btn-sm">
+                                            <i class="fas fa-save"></i> Save
+                                        </button>
+                                        <button type="button" class="sp-btn sp-btn-secondary sp-btn-sm" onclick="bfToggleEdit('<?php echo $bfId; ?>')">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <script>
+                function bfToggleEdit(id) {
+                    var row = document.getElementById('edit-' + id);
+                    row.style.display = row.style.display === 'none' ? '' : 'none';
+                }
+                </script>
+                <?php else: ?>
+                <div class="sp-alert sp-alert-info"><i class="fas fa-info-circle"></i> No brandfetch cache entries yet.</div>
+                <?php endif; ?>
+            </div>
+        </details>
+    </div>
+    <?php endif; ?>
     <!-- Deactivate Link Modal -->
     <div class="modal" id="deactivate-link-modal">
         <div class="modal-background"></div>
