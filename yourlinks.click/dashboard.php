@@ -37,8 +37,10 @@ if (!$tokenValidation || $tokenValidation['user_id'] !== $_SESSION['twitch_user'
 
 // Include database connection
 require_once 'services/database.php';
+require_once 'services/brandfetch.php';
 
 $db = Database::getInstance();
+brandfetch_ensure_table($db);
 $user = $_SESSION['twitch_user'];
 
 // Ensure profile tables exist
@@ -705,13 +707,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="sp-card-body" style="padding:0;">
                         <div class="yl-profile-links-list">
                             <?php foreach ($profileLinksList as $idx => $pl):
-                                $pInfo = $platformDefs[$pl['platform']] ?? $platformDefs['custom'];
-                                $isFirst = $idx === 0;
-                                $isLast  = $idx === count($profileLinksList) - 1;
+                                $pInfo    = $platformDefs[$pl['platform']] ?? $platformDefs['custom'];
+                                $isFirst  = $idx === 0;
+                                $isLast   = $idx === count($profileLinksList) - 1;
+                                $brandImg = brandfetch_get_icon($pl['platform'], $pl['url'], $db);
                             ?>
                             <div class="yl-profile-link-row <?php echo $pl['is_active'] ? '' : 'yl-profile-link-inactive'; ?>">
                                 <span class="yl-profile-link-icon" style="color:<?php echo htmlspecialchars($pInfo['color']); ?>;">
+                                    <?php if ($brandImg): ?>
+                                    <img src="<?php echo htmlspecialchars($brandImg); ?>" alt="" class="yl-brand-icon">
+                                    <?php else: ?>
                                     <i class="<?php echo htmlspecialchars($pInfo['icon']); ?>"></i>
+                                    <?php endif; ?>
                                 </span>
                                 <div class="yl-profile-link-info">
                                     <span class="yl-profile-link-title"><?php echo htmlspecialchars($pl['title']); ?></span>

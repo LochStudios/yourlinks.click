@@ -12,8 +12,10 @@ if (!isset($subdomain)) {
     }
     require_once __DIR__ . '/services/database.php';
 }
+require_once __DIR__ . '/services/brandfetch.php';
 
 $db = Database::getInstance();
+brandfetch_ensure_table($db);
 
 // Ensure profile tables exist (idempotent — safe to call every request)
 $db->query("CREATE TABLE IF NOT EXISTS profile_settings (
@@ -217,13 +219,18 @@ $accentSafe = htmlspecialchars($accentColor);
             <?php foreach ($profileLinks as $pl):
                 $pInfo     = $platforms[$pl['platform']] ?? $platforms['custom'];
                 $iconColor = $pl['platform'] === 'custom' ? $accentColor : $pInfo['color'];
+                $brandImg  = brandfetch_get_icon($pl['platform'], $pl['url'], $db);
             ?>
             <a href="<?php echo htmlspecialchars($pl['url']); ?>"
                class="profile-btn"
                target="_blank" rel="noopener noreferrer">
                 <span class="profile-btn-icon"
                       style="background:<?php echo htmlspecialchars($iconColor); ?>22; color:<?php echo htmlspecialchars($iconColor); ?>;">
+                    <?php if ($brandImg): ?>
+                    <img src="<?php echo htmlspecialchars($brandImg); ?>" alt="" style="width:20px;height:20px;object-fit:contain;border-radius:4px;">
+                    <?php else: ?>
                     <i class="<?php echo htmlspecialchars($pInfo['icon']); ?>"></i>
+                    <?php endif; ?>
                 </span>
                 <span class="profile-btn-label"><?php echo htmlspecialchars($pl['title']); ?></span>
                 <span class="profile-btn-arrow"><i class="fas fa-chevron-right"></i></span>
