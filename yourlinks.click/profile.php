@@ -84,7 +84,7 @@ $platforms = [
 $accentSafe = htmlspecialchars($accentColor);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,6 +94,17 @@ $accentSafe = htmlspecialchars($accentColor);
     <link rel="apple-touch-icon" href="https://cdn.botofthespecter.com/logo.png">
     <meta name="description" content="<?php echo htmlspecialchars($bio ?: $pageTitle . '\'s links'); ?>">
     <link rel="stylesheet" href="https://cdn.botofthespecter.com/css/fontawesome-7.1.0/css/all.css">
+    <!-- Theme bootstrap: apply saved/OS theme before first paint -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('sp-theme');
+                if (!t) t = (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                if (t !== 'light') t = 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
     <style>
         :root { --accent: <?php echo $accentSafe; ?>; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -193,6 +204,48 @@ $accentSafe = htmlspecialchars($accentColor);
         }
         .profile-footer a { color: var(--accent); text-decoration: none; }
         .profile-footer a:hover { color: #e8e8f0; }
+        /* Light mode overrides */
+        [data-theme="light"] body {
+            background: #f4f4f7;
+            color: #1a1a20;
+        }
+        [data-theme="light"] .profile-handle,
+        [data-theme="light"] .profile-bio { color: #555567; }
+        [data-theme="light"] .profile-btn {
+            background: #ffffff;
+            border-color: rgba(0,0,0,0.09);
+            color: #1a1a20;
+        }
+        [data-theme="light"] .profile-btn:hover {
+            background: #eeeef2;
+            color: #1a1a20;
+        }
+        [data-theme="light"] .profile-btn-arrow { color: #9090a8; }
+        [data-theme="light"] .profile-empty,
+        [data-theme="light"] .profile-footer { color: #6e6e84; }
+        [data-theme="light"] .profile-footer a:hover { color: #1a1a20; }
+        .profile-theme-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 6px;
+            color: #6c6c84;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        .profile-theme-btn:hover { background: rgba(255,255,255,0.07); color: #e8e8f0; }
+        [data-theme="light"] .profile-theme-btn {
+            border-color: rgba(0,0,0,0.12);
+            color: #9090a8;
+        }
+        [data-theme="light"] .profile-theme-btn:hover { background: rgba(0,0,0,0.05); color: #1a1a20; }
     </style>
 </head>
 <body>
@@ -241,7 +294,32 @@ $accentSafe = htmlspecialchars($accentColor);
 
         <p class="profile-footer">
             Powered by <a href="https://yourlinks.click" target="_blank">YourLinks.click</a>
+            <button class="profile-theme-btn" id="spThemeToggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
+                <i class="fa-solid fa-moon" id="spThemeIcon"></i>
+            </button>
         </p>
     </div>
+    <script>
+        // Light/dark theme toggle
+        (function () {
+            var btn = document.getElementById('spThemeToggle');
+            if (!btn) return;
+            function current() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
+            function syncIcon(theme) {
+                var icon = document.getElementById('spThemeIcon');
+                if (icon) icon.className = (theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon');
+            }
+            function apply(theme, persist) {
+                document.documentElement.setAttribute('data-theme', theme);
+                syncIcon(theme);
+                if (persist) { try { localStorage.setItem('sp-theme', theme); } catch (e) {} }
+            }
+            syncIcon(current());
+            btn.addEventListener('click', function () { apply(current() === 'light' ? 'dark' : 'light', true); });
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'sp-theme' && (e.newValue === 'light' || e.newValue === 'dark')) { apply(e.newValue, false); }
+            });
+        })();
+    </script>
 </body>
 </html>

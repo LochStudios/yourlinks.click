@@ -2,7 +2,7 @@
 $v = filemtime(__DIR__ . '/css/site.css');
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +14,18 @@ $v = filemtime(__DIR__ . '/css/site.css');
     <link rel="stylesheet" href="https://cdn.botofthespecter.com/css/fontawesome-7.1.0/css/all.css">
     <!-- Site CSS -->
     <link rel="stylesheet" href="/css/site.css?v=<?php echo $v; ?>">
+    <!-- Theme bootstrap: apply saved/OS theme before first paint -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('sp-theme');
+                if (!t) t = (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                if (t !== 'light') t = 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+                document.documentElement.className = (t === 'light' ? 'light-theme' : 'dark-theme');
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
     <!-- Top Nav -->
@@ -22,6 +34,9 @@ $v = filemtime(__DIR__ . '/css/site.css');
             <i class="fas fa-link" style="color: var(--accent-hover);"></i>
             YourLinks.click
         </a>
+        <button class="sp-theme-toggle" id="spThemeToggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
+            <i class="fa-solid fa-moon" id="spThemeIcon"></i>
+        </button>
     </nav>
     <!-- Hero -->
     <div class="db-hero">
@@ -86,5 +101,28 @@ $v = filemtime(__DIR__ . '/css/site.css');
     <footer class="db-landing-footer">
         &copy; <?php echo date('Y'); ?> YourLinks.click &mdash; A BotOfTheSpecter service
     </footer>
+    <script>
+        // Light/dark theme toggle
+        (function () {
+            var btn = document.getElementById('spThemeToggle');
+            if (!btn) return;
+            function current() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
+            function syncIcon(theme) {
+                var icon = document.getElementById('spThemeIcon');
+                if (icon) icon.className = (theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon');
+            }
+            function apply(theme, persist) {
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.className = (theme === 'light' ? 'light-theme' : 'dark-theme');
+                syncIcon(theme);
+                if (persist) { try { localStorage.setItem('sp-theme', theme); } catch (e) {} }
+            }
+            syncIcon(current());
+            btn.addEventListener('click', function () { apply(current() === 'light' ? 'dark' : 'light', true); });
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'sp-theme' && (e.newValue === 'light' || e.newValue === 'dark')) { apply(e.newValue, false); }
+            });
+        })();
+    </script>
 </body>
 </html>

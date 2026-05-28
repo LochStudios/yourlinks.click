@@ -543,7 +543,7 @@ if ($user['login'] === 'gfaundead') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -557,6 +557,18 @@ if ($user['login'] === 'gfaundead') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.css">
     <!-- Site CSS -->
     <link rel="stylesheet" href="/css/site.css?v=<?php echo filemtime(__DIR__ . '/css/site.css'); ?>">
+    <!-- Theme bootstrap: apply saved/OS theme before first paint -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('sp-theme');
+                if (!t) t = (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                if (t !== 'light') t = 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+                document.documentElement.className = (t === 'light' ? 'light-theme' : 'dark-theme');
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
     <!-- Cookie Notice -->
@@ -581,6 +593,9 @@ if ($user['login'] === 'gfaundead') {
             <span class="yl-topbar-username"><?php echo htmlspecialchars($user['display_name']); ?></span>
         </div>
         <div class="yl-topbar-actions">
+            <button class="sp-theme-toggle" id="spThemeToggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
+                <i class="fa-solid fa-moon" id="spThemeIcon"></i>
+            </button>
             <a href="/services/twitch.php?logout=true" class="sp-btn sp-btn-secondary sp-btn-sm">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
@@ -2174,6 +2189,29 @@ if ($user['login'] === 'gfaundead') {
                 });
             });
         });
+    </script>
+    <script>
+        // Light/dark theme toggle
+        (function () {
+            var btn = document.getElementById('spThemeToggle');
+            if (!btn) return;
+            function current() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
+            function syncIcon(theme) {
+                var icon = document.getElementById('spThemeIcon');
+                if (icon) icon.className = (theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon');
+            }
+            function apply(theme, persist) {
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.className = (theme === 'light' ? 'light-theme' : 'dark-theme');
+                syncIcon(theme);
+                if (persist) { try { localStorage.setItem('sp-theme', theme); } catch (e) {} }
+            }
+            syncIcon(current());
+            btn.addEventListener('click', function () { apply(current() === 'light' ? 'dark' : 'light', true); });
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'sp-theme' && (e.newValue === 'light' || e.newValue === 'dark')) { apply(e.newValue, false); }
+            });
+        })();
     </script>
 </body>
 </html>
