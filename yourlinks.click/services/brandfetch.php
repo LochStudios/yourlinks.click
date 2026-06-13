@@ -74,8 +74,7 @@ function brandfetch_get_icon(string $platform, string $url, Database $db): ?stri
     $response   = curl_exec($ch);
     $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError  = curl_error($ch);
-    curl_close($ch);
-    // On quota exceeded or network error, return without caching so we retry next time
+	// On quota exceeded or network error, return without caching so we retry next time
     if ($curlError || $httpStatus === 429) {
         return null;
     }
